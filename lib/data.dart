@@ -5,6 +5,7 @@ class Coin {
   final double price;
   final double change24h;
 
+
   Coin({
     required this.id,
     required this.chainName,
