@@ -3,10 +3,8 @@ import 'package:file_picker/file_picker.dart';
 import 'dart:io';
 import 'package:administrator/services/database_service.dart';
 import 'package:firebase_storage/firebase_storage.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'dart:typed_data';
 import 'package:flutter/foundation.dart' show kIsWeb;
-import 'package:flutter/services.dart';
 
 class AnnouncementCreationDialog extends StatefulWidget {
   const AnnouncementCreationDialog({super.key});
@@ -32,7 +30,7 @@ class _AnnouncementCreationDialogState extends State<AnnouncementCreationDialog>
     final result = await FilePicker.platform.pickFiles(
       type: FileType.custom,
       allowMultiple: true,
-      allowedExtensions: ['jpg', 'jpeg', 'png', 'mp4'],
+      allowedExtensions: ['jpg', 'jpeg', 'png'],
     );
 
     if (result != null) {
@@ -133,7 +131,7 @@ class _AnnouncementCreationDialogState extends State<AnnouncementCreationDialog>
       Map<String, dynamic> announcementData = {
         'title': _titleController.text,
         'content': _contentController.text,
-        'timestamp': FieldValue.serverTimestamp(),
+        'timestamp': DateTime.now(),
         'fileUrls': fileUrls,
         'fileTypes': fileTypes,
         'archived': false,
@@ -177,51 +175,25 @@ class _AnnouncementCreationDialogState extends State<AnnouncementCreationDialog>
     )) ?? false;
   }
 
-  void _handleKeyEvent(RawKeyEvent event, TextEditingController controller) {
-    if (event is RawKeyDownEvent && event.logicalKey == LogicalKeyboardKey.tab) {
-      final value = controller.value;
-      final newText = value.text.replaceRange(
-        value.selection.start,
-        value.selection.end,
-        '\t',
-      );
-      final newSelection = value.selection.copyWith(
-        baseOffset: value.selection.start + 1,
-        extentOffset: value.selection.start + 1,
-      );
-      controller.value = value.copyWith(
-        text: newText,
-        selection: newSelection,
-      );
-    }
-  }
-
-  void _removeFile(int index) {
-    setState(() {
-      _selectedFiles.removeAt(index);
-      _fileTypes.removeAt(index);
-    });
-  }
-
-  void _removeWebImage(int index) {
-    setState(() {
-      _webImages.removeAt(index);
-      _fileTypes.removeAt(index);
-    });
-  }
-
   @override
   Widget build(BuildContext context) {
+    final screenSize = MediaQuery.of(context).size;
+
     return Dialog(
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16.0),
       ),
       elevation: 8.0,
       backgroundColor: Colors.white,
-      child: LayoutBuilder(
-        builder: (BuildContext context, BoxConstraints constraints) {
-          bool isLargeScreen = constraints.maxWidth > 600;
-          return Container(
+      child: ConstrainedBox(
+        constraints: BoxConstraints(
+          maxWidth: screenSize.width * 0.9, // Responsive width
+          maxHeight: screenSize.height * 0.8, // Responsive height
+        ),
+        child: FractionallySizedBox(
+          widthFactor: screenSize.width < 600 ? 0.9 : 0.6,
+          heightFactor: screenSize.width < 600 ? 0.9 : 0.7,
+          child: Container(
             padding: const EdgeInsets.all(24.0),
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(16.0),
@@ -229,254 +201,121 @@ class _AnnouncementCreationDialogState extends State<AnnouncementCreationDialog>
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
                 colors: [
-                  Color.fromARGB(255, 111, 111, 111),
-                  Color.fromARGB(255, 128, 128, 128)
+                  Color(0xFF7A7A7A),
+                  Color(0xFF505050),
                 ],
               ),
             ),
-            child: isLargeScreen
-                ? Row(
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Expanded(flex: 2, child: _buildForm()),
-                      SizedBox(width: 16.0),
-                      Expanded(flex: 1, child: _buildPreview()),
-                    ],
-                  )
-                : SingleChildScrollView(
-                    child: Column(
-                      children: [
-                        _buildForm(),
-                        SizedBox(height: 16.0),
-                        _buildPreview(),
-                      ],
-                    ),
-                  ),
-          );
-        },
-      ),
-    );
-  }
-
-  Widget _buildForm() {
-    return Form(
-      key: _formKey,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              InkWell(
-                onTap: _pickFile,
-                child: Container(
-                  width: 80,
-                 
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    border: Border.all(color: Colors.white, width: 2.0),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.2),
-                        spreadRadius: 2,
-                        blurRadius: 5,
-                        offset: Offset(0, 3),
+                      InkWell(
+                        onTap: _pickFile,
+                        child: Container(
+                          width: 80,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            border: Border.all(color: Colors.white, width: 2.0),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.2),
+                                spreadRadius: 2,
+                                blurRadius: 5,
+                                offset: Offset(0, 3),
+                              ),
+                            ],
+                          ),
+                          child: ClipOval(
+                            child: Icon(Icons.camera_alt, size: 40, color: Colors.white),
+                          ),
+                        ),
+                      ),
+                      IconButton(
+                        icon: Icon(Icons.close, color: Colors.white),
+                        onPressed: () => Navigator.pop(context),
                       ),
                     ],
                   ),
-                  child: ClipOval(
-                    child: Icon(Icons.camera_alt, size: 40, color: Colors.white),
-                  ),
-                ),
-              ),
-              IconButton(
-                icon: Icon(Icons.close, color: Colors.white),
-                onPressed: () => Navigator.pop(context),
-              ),
-            ],
-          ),
-          const SizedBox(height: 20.0),
-          TextFormField(
-            controller: _titleController,
-            focusNode: _titleFocusNode,
-            decoration: const InputDecoration(
-              labelText: 'Title',
-              labelStyle: TextStyle(color: Colors.white),
-              border: OutlineInputBorder(),
-            ),
-            style: TextStyle(color: Colors.white),
-            validator: (value) {
-              if (value == null || value.isEmpty) {
-                return 'Title is required';
-              }
-              return null;
-            },
-            onFieldSubmitted: (_) {
-              _titleFocusNode.unfocus();
-              FocusScope.of(context).requestFocus(_contentFocusNode);
-            },
-          ),
-          const SizedBox(height: 16.0),
-          RawKeyboardListener(
-            focusNode: FocusNode(),
-            onKey: (event) => _handleKeyEvent(event, _contentController),
-            child: TextFormField(
-              controller: _contentController,
-              focusNode: _contentFocusNode,
-              decoration: const InputDecoration(
-                labelText: 'Content',
-                labelStyle: TextStyle(color: Colors.white),
-                border: OutlineInputBorder(),
-              ),
-              style: TextStyle(color: Colors.white),
-              maxLines: 6,
-              validator: (value) {
-                if (value == null || value.isEmpty) {
-                  return 'Content is required';
-                }
-                return null;
-              },
-            ),
-          ),
-          const SizedBox(height: 16.0),
-          ElevatedButton(
-            onPressed: _isUploading ? null : _createAnnouncement,
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF8C52FF),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12.0),
-              ),
-              padding: const EdgeInsets.symmetric(vertical: 16.0),
-            ),
-            child: _isUploading
-                ? Column(
-                    children: [
-                      const CircularProgressIndicator(),
-                      const SizedBox(height: 8.0),
-                      Text('${_uploadProgress.toStringAsFixed(2)}% Uploaded'),
-                    ],
-                  )
-                : const Text(
-                    'Create Announcement',
-                    style: TextStyle(fontSize: 18.0, color: Colors.white),
-                  ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildPreview() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        ValueListenableBuilder(
-          valueListenable: _titleController,
-          builder: (context, TextEditingValue value, __) {
-            return Text(
-              'Title Preview: ${value.text}',
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 16.0,
-                fontWeight: FontWeight.bold,
-              ),
-            );
-          },
-        ),
-        const SizedBox(height: 8.0),
-        ValueListenableBuilder(
-          valueListenable: _contentController,
-          builder: (context, TextEditingValue value, __) {
-            return Text(
-              'Content Preview: ${value.text}',
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 16.0,
-              ),
-            );
-          },
-        ),
-        const SizedBox(height: 16.0),
-        const Text(
-          'Selected Files:',
-          style: TextStyle(
-            color: Colors.white,
-            fontSize: 16.0,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        const SizedBox(height: 8.0),
-        _selectedFiles.isNotEmpty || _webImages.isNotEmpty
-            ? Wrap(
-                spacing: 8.0,
-                runSpacing: 8.0,
-                children: [
-                  ..._selectedFiles.asMap().entries.map((entry) {
-                    int index = entry.key;
-                    File file = entry.value;
-                    return Stack(
+                  const SizedBox(height: 20.0),
+                  Form(
+                    key: _formKey,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        Image.file(
-                          file,
-                          width: 80,
-                          height: 80,
-                          fit: BoxFit.cover,
+                        TextFormField(
+                          controller: _titleController,
+                          focusNode: _titleFocusNode,
+                          decoration: const InputDecoration(
+                            labelText: 'Title',
+                            labelStyle: TextStyle(color: Colors.white),
+                            border: OutlineInputBorder(),
+                          ),
+                          style: TextStyle(color: Colors.white),
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return 'Title is required';
+                            }
+                            return null;
+                          },
+                          onFieldSubmitted: (_) {
+                            _titleFocusNode.unfocus();
+                            FocusScope.of(context).requestFocus(_contentFocusNode);
+                          },
                         ),
-                        Positioned(
-                          top: 0,
-                          right: 0,
-                          child: InkWell(
-                            onTap: () => _removeFile(index),
-                            child: Container(
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                color: Colors.red,
-                              ),
-                              child: Icon(Icons.close, size: 20, color: Colors.white),
+                        const SizedBox(height: 16.0),
+                        TextFormField(
+                          controller: _contentController,
+                          focusNode: _contentFocusNode,
+                          maxLines: 5,
+                          decoration: const InputDecoration(
+                            labelText: 'Content',
+                            labelStyle: TextStyle(color: Colors.white),
+                            border: OutlineInputBorder(),
+                          ),
+                          style: TextStyle(color: Colors.white),
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return 'Content is required';
+                            }
+                            return null;
+                          },
+                        ),
+                        const SizedBox(height: 24.0),
+                        ElevatedButton(
+                          onPressed: _isUploading ? null : _createAnnouncement,
+                          style: ElevatedButton.styleFrom(
+                            padding: EdgeInsets.symmetric(vertical: 16.0),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12.0),
                             ),
+                          ),
+                          child: Padding(
+                            padding: const EdgeInsets.all(16.0),
+                            child: _isUploading
+                                ? Column(
+                                    children: [
+                                      CircularProgressIndicator(),
+                                      SizedBox(height: 8.0),
+                                      Text('${_uploadProgress.toStringAsFixed(2)}% Uploaded'),
+                                    ],
+                                  )
+                                : const Text('Create Announcement', style: TextStyle(fontSize: 18.0)),
                           ),
                         ),
                       ],
-                    );
-                  }).toList(),
-                  ..._webImages.asMap().entries.map((entry) {
-                    int index = entry.key;
-                    Uint8List webImage = entry.value;
-                    return Stack(
-                      children: [
-                        Image.memory(
-                          webImage,
-                          width: 80,
-                          height: 80,
-                          fit: BoxFit.cover,
-                        ),
-                        Positioned(
-                          top: 0,
-                          right: 0,
-                          child: InkWell(
-                            onTap: () => _removeWebImage(index),
-                            child: Container(
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                color: Colors.red,
-                              ),
-                              child: Icon(Icons.close, size: 20, color: Colors.white),
-                            ),
-                          ),
-                        ),
-                      ],
-                    );
-                  }).toList(),
+                    ),
+                  ),
                 ],
-              )
-            : const Text(
-                'No files selected',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 14.0,
-                ),
               ),
-      ],
+            ),
+          ),
+        ),
+      ),
     );
   }
 }

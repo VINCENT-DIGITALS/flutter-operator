@@ -390,9 +390,9 @@ class DatabaseService {
       // Validate the collection name
       if (collection != 'Operator' && collection != 'Responder') {
         throw Exception('Invalid collection name');
-      } else if(collection == 'Operator'){
+      } else if (collection == 'Operator') {
         collection = 'operator';
-      } else if(collection == 'Responder'){
+      } else if (collection == 'Responder') {
         collection = 'responders';
       }
 
@@ -481,12 +481,6 @@ class AuthService {
         print('Access denied. Only authorized users can sign in.');
         return 'Access denied. Only authorized users can sign in.';
       }
-      // Fetch user document from Firestore
-      final responderDoc = _firestore
-          .collection("responders")
-          .where('email', isEqualTo: email)
-          .limit(1);
-      final respdocSnapshot = await responderDoc.get();
 
       // Fetch user document from Firestore
       final operatorDoc = _firestore
@@ -501,9 +495,6 @@ class AuthService {
       if (operatordocSnapshot.docs.isNotEmpty) {
         userData = operatordocSnapshot.docs.first.data();
         documentId = operatordocSnapshot.docs.first.id;
-      } else if (respdocSnapshot.docs.isNotEmpty) {
-        userData = respdocSnapshot.docs.first.data();
-        documentId = respdocSnapshot.docs.first.id;
       } else {
         return 'Account does not exist';
       }
