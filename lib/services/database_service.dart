@@ -6,6 +6,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:administrator/models/weather_model.dart';
 import 'package:flutter/material.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 import 'package:get/get.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:firebase_storage/firebase_storage.dart';
@@ -16,6 +17,8 @@ class DatabaseService {
   final FirebaseFirestore _db = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseStorage _storage = FirebaseStorage.instance;
+  final CollectionReference chats =
+      FirebaseFirestore.instance.collection('chats');
 
   // Check if user is authenticated
   bool _isAuthenticated() {
@@ -59,7 +62,27 @@ class DatabaseService {
   }
 
   Stream<List<Map<String, dynamic>>> fetchAnnouncementData() {
-    return _db.collection('announcements').snapshots().map((snapshot) {
+    return _db
+        .collection('announcements')
+        .where('archived', isEqualTo: false)
+        .orderBy('timestamp',
+            descending: true) // Order by timestamp in descending order
+        .snapshots()
+        .map((snapshot) {
+      return snapshot.docs.map((doc) {
+        return doc.data()..['id'] = doc.id;
+      }).toList();
+    });
+  }
+
+  Stream<List<Map<String, dynamic>>> fetchArchivedAnnouncementData() {
+    return _db
+        .collection('announcements')
+        .where('archived', isEqualTo: true)
+        .orderBy('timestamp',
+            descending: true) // Order by timestamp in descending order
+        .snapshots()
+        .map((snapshot) {
       return snapshot.docs.map((doc) {
         return doc.data()..['id'] = doc.id;
       }).toList();
@@ -83,14 +106,22 @@ class DatabaseService {
   }
 
   // Update announcement
-  Future<void> updateAnnouncement(
-      String id, Map<String, dynamic> announcementData) async {
+  Future<bool> updateAnnouncement(
+      String id, String title, String content) async {
     try {
-      await _db.collection('announcements').doc(id).update(announcementData);
-      print('Announcement updated: $announcementData');
+      await FirebaseFirestore.instance
+          .collection('announcements')
+          .doc(id)
+          .update({
+        'title': title,
+        'content': content,
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+      print('Announcement updated successfully');
+      return true; // Return true if successful
     } catch (e) {
       print('Error updating announcement: $e');
-      throw Exception('Error updating announcement: $e');
+      return false; // Return false if there was an error
     }
   }
 
@@ -103,6 +134,24 @@ class DatabaseService {
       print('Error archiving announcement: $e');
       throw Exception('Error archiving announcement: $e');
     }
+  }
+
+  // Archive announcement
+  Future<void> UnarchiveAnnouncement(String id) async {
+    try {
+      await _db.collection('announcements').doc(id).update({'archived': false});
+      print('Announcement archived: $id');
+    } catch (e) {
+      print('Error archiving announcement: $e');
+      throw Exception('Error archiving announcement: $e');
+    }
+  }
+
+  Future<void> deleteAnnouncement(String announcementId) async {
+    await FirebaseFirestore.instance
+        .collection('announcements')
+        .doc(announcementId)
+        .delete();
   }
 
   // Add post
@@ -156,18 +205,16 @@ class DatabaseService {
   Future<bool> isAuthorizedEmail(String email) async {
     final operatorQuery =
         _db.collection('operator').where('email', isEqualTo: email).get();
-    final responderQuery =
-        _db.collection('responders').where('email', isEqualTo: email).get();
 
-    final results = await Future.wait([operatorQuery, responderQuery]);
+    final results = await Future.wait([operatorQuery]);
     final isOperator = results[0].docs.isNotEmpty;
-    final isResponder = results[1].docs.isNotEmpty;
+
     // Ensure the email is present in only one collection
-    if (isOperator && isResponder) {
-      print('Error: Email exists in both operator and responder collections.');
+    if (!isOperator) {
+      print('Error: Account does not exist in Operators.');
       return false; // Email should not belong to both collections
     }
-    return isOperator || isResponder;
+    return isOperator;
   }
 
   // Getter for the current user
@@ -175,7 +222,6 @@ class DatabaseService {
     return _auth.currentUser;
   }
 
-  // Register with Email and Password
   Future<UserCredential> registerWithEmailAndPassword(String email,
       String password, String displayName, String phoneNumber) async {
     UserCredential userCredential = await _auth.createUserWithEmailAndPassword(
@@ -189,7 +235,17 @@ class DatabaseService {
     return userCredential;
   }
 
-  // Create user document in Firestore if it doesn't already exist
+// Check if email exists in the responders collection
+  Future<bool> checkIfEmailExists(String email) async {
+    final querySnapshot = await _db
+        .collection("responders")
+        .where("email", isEqualTo: email)
+        .limit(1)
+        .get();
+    return querySnapshot.docs.isNotEmpty;
+  }
+
+// Create user document in Firestore if it doesn't already exist
   Future<void> _createUserDocumentIfNotExists(User? user,
       [String? displayName, phoneNumber]) async {
     if (user != null) {
@@ -239,10 +295,11 @@ class DatabaseService {
     }
   }
 
-  // Method to fetch user data
+// Method to fetch user data with "createdAt" and "email" fields
   Stream<List<Map<String, dynamic>>> fetchUserData() {
     return _db
         .collection('citizens')
+        .orderBy('createdAt', descending: false)
         .snapshots()
         .map((snapshot) => snapshot.docs.map((doc) {
               return {
@@ -256,10 +313,87 @@ class DatabaseService {
                 "status": doc.data().containsKey('status')
                     ? doc.get('status')
                     : 'Unknown',
+                "email": doc.data().containsKey('email')
+                    ? doc.get('email')
+                    : 'Unknown', // Added email field
+                "createdAt": doc.data().containsKey('createdAt')
+                    ? doc.get('createdAt') // Assuming this is a Timestamp
+                    : null, // Set to null if not available
               };
             }).toList());
   }
 
+// Get chat messages for a specific chat with pagination
+  Stream<QuerySnapshot> getMessages(String chatId, {int limit = 10}) {
+    return chats
+        .doc(chatId)
+        .collection('messages')
+        .orderBy('timestamp', descending: true)
+        .limit(limit)
+        .snapshots();
+  }
+
+  Future<String> getDisplayName(DocumentReference senderRef) async {
+    DocumentSnapshot userDoc = await senderRef.get();
+    String collectionName =
+        userDoc.reference.parent.id; // Get the parent collection name
+
+    // Assuming the collection names are 'responders' or 'operators'
+    if (collectionName == 'responders' || collectionName == 'operator') {
+      return userDoc['displayName'] ?? 'Unknown';
+    }
+    return 'Unknown';
+  }
+
+  // Method to get current user ID
+  String? getCurrentUserId() {
+    User? user = currentUser;
+    return user?.uid; // Return UID if user is logged in, otherwise null
+  }
+
+  Future<void> sendMessage(
+      String chatId, String message, String senderId, bool isOperator) async {
+    var timestamp = DateTime.now();
+
+    // Determine the correct user collection based on whether the user is an operator or responder
+    CollectionReference operatorCollection =
+        FirebaseFirestore.instance.collection('operator');
+
+    try {
+      // Fetch the display name
+      DocumentSnapshot userDoc = await operatorCollection.doc(senderId).get();
+      String displayName =
+          userDoc['displayName'] ?? 'Unknown'; // Get the display name directly
+
+      var messageData = {
+        'message': message,
+        'sender': operatorCollection
+            .doc(senderId), // Reference the correct collection
+        'timestamp': timestamp,
+        'seen_by': [], // Initially no one has seen the message
+        'displayName': displayName,
+      };
+
+      // Add the message to the messages subcollection
+      await chats.doc(chatId).collection('messages').add(messageData);
+
+      // Update the chat's last message details
+      await chats.doc(chatId).update({
+        'last_message': message,
+        'last_message_time': timestamp,
+        'last_message_sent_by':
+            operatorCollection.doc(senderId), // Correct reference for sender
+      });
+
+      print(
+          "Message sent successfully: $message"); // Success message for debugging
+    } catch (e) {
+      // Print the error for debugging
+      print("Error sending message: $e");
+    }
+  }
+
+  //
   Future<void> updateCitizenStatus(String userId, String status) async {
     try {
       await _db.collection('citizens').doc(userId).update({
@@ -277,9 +411,101 @@ class DatabaseService {
   }
 
   // Method to fetch Responder data
+  Stream<List<Map<String, dynamic>>> fetchIncidentReportData() {
+    return _db
+        .collection('reports')
+        .orderBy('timestamp', descending: true)
+        .snapshots()
+        .map((snapshot) => snapshot.docs.map((doc) {
+              return {
+                "id": doc.id,
+
+                "status": doc.data().containsKey('status')
+                    ? doc.get('status')
+                    : 'Unknown',
+                "acceptedBy": doc.data().containsKey('acceptedBy')
+                    ? doc.get('acceptedBy')
+                    : 'Unknown',
+
+                "incidentType": doc.data().containsKey('incidentType')
+                    ? doc.get('incidentType')
+                    : 'Unknown',
+                "injuredCount": doc.data().containsKey('injuredCount')
+                    ? doc.get('injuredCount') // Assuming this is a Timestamp
+                    : null, // Set to null if not available
+                "seriousness": doc.data().containsKey('seriousness')
+                    ? doc.get('seriousness') // Assuming this is a Timestamp
+                    : null, // Set to null if not available
+                "timestamp": doc.data().containsKey('timestamp')
+                    ? doc.get('timestamp')
+                    : 'Unknown', // Added email field
+
+                // "reporterId": doc.data().containsKey('reporterId')
+                //     ? doc.get('reporterId') // Assuming this is a Timestamp
+                //     : null, // Set to null if not available
+              };
+            }).toList());
+  }
+
+  Future<void> deleteReport(String reportId) async {
+    try {
+      await _db.collection('reports').doc(reportId).delete();
+    } catch (e) {
+      throw Exception("Error deleting report: $e");
+    }
+  }
+
+  // Method to fetch Logbook  data
+  Stream<List<Map<String, dynamic>>> fetchIncidentLogBookData() {
+    return _db
+        .collection('logBook')
+        .orderBy('timestamp', descending: false)
+        .snapshots()
+        .map((snapshot) => snapshot.docs.map((doc) {
+              return {
+                "id": doc.id,
+                "status": doc.data().containsKey('status')
+                    ? doc.get('status')
+                    : 'Pending',
+                "scam": doc.data().containsKey('scam')
+                    ? doc.get('scam')
+                    : 'Pending',
+                "primaryResponderDisplayName":
+                    doc.data().containsKey('primaryResponderDisplayName')
+                        ? doc.get('primaryResponderDisplayName')
+                        : 'Unknown',
+                "incidentType": doc.data().containsKey('incidentType')
+                    ? doc.get('incidentType')
+                    : 'Unknown',
+                "injuredCount": doc.data().containsKey('injuredCount')
+                    ? doc.get('injuredCount')
+                    : null,
+                "seriousness": doc.data().containsKey('seriousness')
+                    ? doc.get('seriousness')
+                    : null,
+                "timestamp": doc.data().containsKey('timestamp')
+                    ? doc.get('timestamp') // Keep as Timestamp if available
+                    : null, // Set to null if not available
+              };
+            }).toList());
+  }
+
+  Future<bool> deleteLogBook(String userId) async {
+    try {
+      // Perform the delete operation
+      await _db.collection('logBook').doc(userId).delete();
+      return true;
+    } catch (e) {
+      // Handle or log the error
+      return false;
+    }
+  }
+
+  // Method to fetch Responder data
   Stream<List<Map<String, dynamic>>> fetchResponderData() {
     return _db
         .collection('responders')
+        .orderBy('createdAt', descending: true)
         .snapshots()
         .map((snapshot) => snapshot.docs.map((doc) {
               return {
@@ -293,6 +519,12 @@ class DatabaseService {
                 "status": doc.data().containsKey('status')
                     ? doc.get('status')
                     : 'Unknown',
+                "email": doc.data().containsKey('email')
+                    ? doc.get('email')
+                    : 'Unknown', // Added email field
+                "createdAt": doc.data().containsKey('createdAt')
+                    ? doc.get('createdAt') // Assuming this is a Timestamp
+                    : null, // Set to null if not available
               };
             }).toList());
   }
@@ -388,12 +620,8 @@ class DatabaseService {
   }) async {
     try {
       // Validate the collection name
-      if (collection != 'Operator' && collection != 'Responder') {
+      if (collection != 'operator') {
         throw Exception('Invalid collection name');
-      } else if (collection == 'Operator') {
-        collection = 'operator';
-      } else if (collection == 'Responder') {
-        collection = 'responders';
       }
 
       final userRef = _db.collection(collection).doc(userId);
@@ -402,6 +630,39 @@ class DatabaseService {
       // Handle errors
       throw Exception('Error updating admin user data: $e');
     }
+  }
+
+  //forgot password
+  Future<void> sendPasswordResetEmail(String email) async {
+    try {
+      await _auth.sendPasswordResetEmail(email: email);
+    } catch (e) {
+      print('Something went wrong: $e');
+    }
+  }
+
+  void flutterToastError(String message) {
+    Fluttertoast.showToast(
+      msg: message,
+      toastLength: Toast.LENGTH_SHORT,
+      gravity: ToastGravity.CENTER,
+      timeInSecForIosWeb: 1,
+      backgroundColor: Colors.red,
+      textColor: Colors.white,
+      fontSize: 16.0,
+    );
+  }
+
+  void flutterToast(String message) {
+    Fluttertoast.showToast(
+      msg: message,
+      toastLength: Toast.LENGTH_SHORT,
+      gravity: ToastGravity.CENTER,
+      timeInSecForIosWeb: 1,
+      backgroundColor: Colors.green,
+      textColor: Colors.white,
+      fontSize: 16.0,
+    );
   }
 }
 

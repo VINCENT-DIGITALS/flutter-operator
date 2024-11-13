@@ -1,4 +1,4 @@
-import 'package:administrator/operator_pages/operator_dashboard_page.dart';
+import 'package:administrator/operator_pages/dashboard_page.dart';
 import 'package:administrator/login_page/login_page.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';

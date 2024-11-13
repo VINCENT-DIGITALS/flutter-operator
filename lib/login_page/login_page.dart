@@ -1,10 +1,11 @@
 import 'package:administrator/components/loading.dart';
-import 'package:administrator/operator_pages/operator_dashboard_page.dart';
+import 'package:administrator/operator_pages/dashboard_page.dart';
 import 'package:administrator/services/database_service.dart';
 import 'package:auto_size_text/auto_size_text.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
+import '../components/forgot_password.dart';
 import '/components/my_button.dart';
 
 //test line
@@ -403,7 +404,13 @@ class _LoginPageState extends State<LoginPage> {
                         children: [
                           GestureDetector(
                             onTap: () {
-                              // Handle the forgot password action
+                               // Handle the forgot password action
+                                        showDialog(
+                                          context: context,
+                                          builder: (BuildContext context) {
+                                            return const ForgotPasswordDialog();
+                                          },
+                                        );
                             },
                             child: const Text(
                               'Forgot your password?',

@@ -1,16 +1,14 @@
 import 'dart:io';
 import 'package:administrator/services/database_service.dart';
 import 'package:administrator/services/shared_pref.dart';
-import 'package:administrator/widgets/appbar_navigation.dart';
-import 'package:administrator/widgets/custom_drawer.dart';
-import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:image_picker/image_picker.dart';
-import 'package:get_storage/get_storage.dart';
+import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../components/forgot_password.dart';
+
 class MyAccountPage extends StatefulWidget {
-  const MyAccountPage({super.key});
+  const MyAccountPage({Key? key}) : super(key: key);
 
   @override
   State<MyAccountPage> createState() => _MyAccountPageState();
@@ -25,27 +23,18 @@ class _MyAccountPageState extends State<MyAccountPage> {
   bool _isPhoneNumberRevealed = false;
   bool _isAddressRevealed = false;
   bool _isEditing = false;
+  bool _isLoading = false;
   File? _image;
   String? _imageUrl;
   final TextEditingController emailController = TextEditingController();
   final TextEditingController phoneController = TextEditingController();
   final TextEditingController usernameController = TextEditingController();
   final TextEditingController addressController = TextEditingController();
-  String? role;
 
   @override
   void initState() {
     super.initState();
     _initializePreferences();
-  }
-
-  @override
-  void dispose() {
-    emailController.dispose();
-    phoneController.dispose();
-    usernameController.dispose();
-    addressController.dispose();
-    super.dispose();
   }
 
   void _initializePreferences() async {
@@ -54,33 +43,32 @@ class _MyAccountPageState extends State<MyAccountPage> {
   }
 
   Future<void> _fetchAndDisplayUserData() async {
-    try {
+    final currentUser = FirebaseAuth.instance.currentUser;
+    final userId = currentUser?.uid;
+
+    if (userId != null) {
       setState(() {
         _userData = {
-          'uid': _prefs?.getString('uid') ?? '',
+          'uid': userId,
           'email': _prefs?.getString('email') ?? '',
           'displayName': _prefs?.getString('displayName') ?? '',
-          'photoURL': _prefs?.getString('photoURL') ?? '',
           'phoneNum': _prefs?.getString('phoneNum') ?? '',
-          'createdAt': _prefs?.getString('createdAt') ?? '',
           'address': _prefs?.getString('address') ?? '',
-          'status': _prefs?.getString('status') ?? '',
-          'type': _prefs?.getString('type') ?? 'Admin',
         };
-      });
-      setState(() {
         usernameController.text = _userData['displayName'] ?? '';
         emailController.text = _userData['email'] ?? '';
         phoneController.text = _userData['phoneNum'] ?? '';
         addressController.text = _userData['address'] ?? '';
-        _isEditing = false;
       });
-    } catch (e) {
-      print('Error fetching user data: $e');
+    } else {
+      print('User is not logged in');
     }
   }
 
   Future<void> _saveUserData() async {
+    setState(() {
+      _isLoading = true;
+    });
     try {
       final updatedData = {
         'displayName': usernameController.text,
@@ -88,23 +76,35 @@ class _MyAccountPageState extends State<MyAccountPage> {
         'phoneNum': phoneController.text,
         'address': addressController.text,
       };
+
+      final userId = _userData['uid'] ?? 'defaultUserId';
       await _dbService.updateAdminUserData(
-        collection: _userData['type'] ?? 'Admin',
-        userId: _userData['uid'] ?? 'specificUserId',
+        collection: 'operator',
+        userId: userId,
         updatedFields: updatedData,
       );
+
       final prefs = await SharedPreferencesService.getInstance();
       prefs.saveUserData(updatedData);
 
       setState(() {
         _userData = updatedData;
         _isEditing = false;
+        _isLoading = false;
       });
 
-      // Fetch and display updated user data after saving
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('User data updated successfully!')),
+      );
       _fetchAndDisplayUserData();
     } catch (e) {
       print('Error saving user data: $e');
+      setState(() {
+        _isLoading = false;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error saving user data: $e')),
+      );
     }
   }
 
@@ -122,241 +122,248 @@ class _MyAccountPageState extends State<MyAccountPage> {
   Widget build(BuildContext context) {
     String firstLetter = _userData['displayName']?.isNotEmpty == true
         ? _userData['displayName']!.substring(0, 1)
-        : '';
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        bool isLargeScreen = constraints.maxWidth > 600;
+        : '?';
 
-        return Scaffold(
-          key: _scaffoldKey,
-          appBar: CustomAppBar(
-            isLargeScreen: isLargeScreen,
-            scaffoldKey: _scaffoldKey,
-            title: 'Account Profile',
-          ),
-          drawer: isLargeScreen
-              ? null
-              : CustomDrawer(scaffoldKey: _scaffoldKey, currentRoute: '/My Account'),
-          body: Row(
-            children: [
-              if (isLargeScreen)
-                Container(
-                  width: 250,
-                  child: CustomDrawer(scaffoldKey: _scaffoldKey, currentRoute: '/My Account'),
-                ),
-              Expanded(
-                child: Center(
-                  child: SingleChildScrollView(
-                    padding: const EdgeInsets.all(16.0),
-                    child: ConstrainedBox(
-                      constraints: BoxConstraints(maxWidth: 800),
-                      child: Stack(
+    return SafeArea(
+      child: Scaffold(
+        key: _scaffoldKey,
+        backgroundColor: Colors.grey.shade100,
+        appBar: AppBar(
+          title: const Text('My Account'),
+          actions: [
+            if (_isEditing)
+              IconButton(
+                icon: const Icon(Icons.close),
+                onPressed: _cancelEditing,
+              ),
+          ],
+        ),
+        body: Center(
+          child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 50.0),
+              child: SingleChildScrollView(
+                child: Container(
+                  width: MediaQuery.of(context).size.width > 500
+                      ? 400
+                      : double.infinity,
+                  padding: const EdgeInsets.all(20.0),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(
+                        12), // Rounded edges for the container
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.grey.withOpacity(0.3),
+                        blurRadius: 10,
+                        spreadRadius: 5,
+                        offset:
+                            const Offset(0, 3), // Adds shadow to the container
+                      ),
+                    ],
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Stack(
                         children: [
-                          Column(
-                            children: [
-                              Container(
-                                padding: const EdgeInsets.all(16.0),
-                                margin: const EdgeInsets.only(bottom: 16.0),
-                                decoration: BoxDecoration(
-                                  color: Colors.white,
-                                  border: Border.all(color: Colors.green),
-                                  borderRadius: BorderRadius.circular(10),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: Colors.grey.withOpacity(0.5),
-                                      spreadRadius: 2,
-                                      blurRadius: 5,
-                                      offset: Offset(0, 3),
-                                    ),
-                                  ],
-                                ),
-                                child: Column(
-                                  children: [
-                                    CircleAvatar(
-                                      backgroundColor: Colors.white,
-                                      radius: 30,
-                                      child: Text(
-                                        firstLetter.isEmpty ? '?' : firstLetter,
-                                        style: const TextStyle(
-                                          fontSize: 24,
-                                          fontWeight: FontWeight.bold,
-                                          color: Colors.green,
-                                        ),
-                                      ),
-                                    ),
-                                    const SizedBox(height: 16),
-                                    _buildProfileInfoRow(
-                                      title: 'Full name',
-                                      controller: usernameController,
-                                      content: _userData['displayName'] ?? 'No name available',
-                                      hidden: false,
-                                    ),
-                                    const SizedBox(height: 8),
-                                    _buildProfileInfoRow(
-                                      title: 'Email',
-                                      controller: emailController,
-                                      content: _userData['email'] ?? 'No email available',
-                                      hidden: false,
-                                    ),
-                                    const SizedBox(height: 8),
-                                    _buildProfileInfoRow(
-                                      title: 'Phone Number',
-                                      controller: phoneController,
-                                      content: _isPhoneNumberRevealed
-                                          ? _userData['phoneNum'] ?? 'No Number available'
-                                          : '**********',
-                                      hidden: true,
-                                      onRevealPressed: () {
-                                        setState(() {
-                                          _isPhoneNumberRevealed = !_isPhoneNumberRevealed;
-                                        });
-                                      },
-                                    ),
-                                    const SizedBox(height: 8),
-                                    _buildProfileInfoRow(
-                                      title: 'Address',
-                                      controller: addressController,
-                                      content: _isAddressRevealed
-                                          ? _userData['address'] ?? 'No Address available'
-                                          : '**********',
-                                      hidden: true,
-                                      onRevealPressed: () {
-                                        setState(() {
-                                          _isAddressRevealed = !_isAddressRevealed;
-                                        });
-                                      },
-                                    ),
-                                    if (_isEditing)
-                                      Padding(
-                                        padding: const EdgeInsets.symmetric(vertical: 16.0),
-                                        child: ElevatedButton(
-                                          onPressed: _saveUserData,
-                                          style: ElevatedButton.styleFrom(
-                                            foregroundColor: Colors.white,
-                                            backgroundColor: Colors.green,
-                                            padding: const EdgeInsets.symmetric(
-                                                horizontal: 32, vertical: 12),
-                                          ),
-                                          child: const Text('Save'),
-                                        ),
-                                      ),
-                                  ],
-                                ),
-                              ),
-                              const SizedBox(height: 16),
-                              const Text(
-                                'Password and Authentication',
-                                style: TextStyle(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.green,
-                                ),
-                              ),
-                              const SizedBox(height: 8),
-                              ElevatedButton(
-                                onPressed: () {
-                                  // Email verification logic
-                                },
-                                style: ElevatedButton.styleFrom(
-                                  foregroundColor: Colors.white,
-                                  backgroundColor: Colors.blue,
-                                  padding: const EdgeInsets.symmetric(
-                                      horizontal: 32, vertical: 12),
-                                ),
-                                child: const Text('Email Verification'),
-                              ),
-                              const SizedBox(height: 8),
-                              ElevatedButton(
-                                onPressed: () {
-                                  // Change password logic
-                                },
-                                style: ElevatedButton.styleFrom(
-                                  foregroundColor: Colors.white,
-                                  backgroundColor: Colors.blue,
-                                  padding: const EdgeInsets.symmetric(
-                                      horizontal: 32, vertical: 12),
-                                ),
-                                child: const Text('Change password'),
-                              ),
-                            ],
+                          CircleAvatar(
+                            backgroundColor: Colors.green.shade50,
+                            radius: 50,
+                            child: Text(
+                              firstLetter,
+                              style: const TextStyle(
+                                  fontSize: 40, color: Colors.green),
+                            ),
                           ),
-                          if (_isEditing)
-                            Positioned(
-                              top: 8,
-                              right: 8,
-                              child: IconButton(
-                                icon: Icon(Icons.check),
-                                onPressed: _saveUserData,
-                              ),
-                            ),
-                          if (_isEditing)
-                            Positioned(
-                              top: 8,
-                              left: 8,
-                              child: IconButton(
-                                icon: Icon(Icons.close),
-                                onPressed: _cancelEditing,
-                              ),
-                            ),
-                          if (!_isEditing)
-                            Positioned(
-                              top: 8,
-                              right: 8,
-                              child: IconButton(
-                                icon: Icon(Icons.edit),
-                                onPressed: () {
-                                  setState(() {
-                                    _isEditing = true;
-                                  });
-                                },
-                              ),
-                            ),
                         ],
                       ),
-                    ),
+                      const SizedBox(height: 20),
+                      ..._buildProfileInfoCards(),
+                      const SizedBox(height: 20),
+                      if (_isEditing)
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                          children: [
+                            ElevatedButton(
+                              onPressed: _isLoading ? null : _saveUserData,
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.green,
+                                foregroundColor:
+                                    Colors.white, // Set text color here
+                              ),
+                              child: _isLoading
+                                  ? const SizedBox(
+                                      width: 20,
+                                      height: 20,
+                                      child: CircularProgressIndicator(
+                                        color: Colors.white,
+                                        strokeWidth: 2,
+                                      ),
+                                    )
+                                  : const Text('Save'),
+                            ),
+                            OutlinedButton(
+                              onPressed: _cancelEditing,
+                              child: const Text('Cancel'),
+                            ),
+                          ],
+                        ),
+                      const SizedBox(height: 20),
+                      _buildAccountManagementCard(),
+                    ],
                   ),
                 ),
-              ),
-            ],
-          ),
-        );
-      },
+              )),
+        ),
+        floatingActionButton: !_isEditing
+            ? FloatingActionButton(
+                onPressed: () {
+                  setState(() {
+                    _isEditing = true;
+                  });
+                },
+                backgroundColor: Colors.green,
+                child: const Icon(Icons.edit),
+              )
+            : null,
+      ),
     );
   }
 
-  Widget _buildProfileInfoRow({
-    required String title,
-    required TextEditingController controller,
-    required String content,
-    required bool hidden,
+  List<Widget> _buildProfileInfoCards() {
+    return [
+      _buildProfileInfoCard(
+        'Full Name',
+        usernameController,
+        _userData['displayName'] ?? 'Not available',
+      ),
+      _buildProfileInfoCard(
+        'Email',
+        emailController,
+        _userData['email'] ?? 'Not available',
+        isEmail: true,
+      ),
+      _buildProfileInfoCard(
+        'Phone Number',
+        phoneController,
+        _isPhoneNumberRevealed
+            ? _userData['phoneNum'] ?? 'Not available'
+            : '**********',
+        hidden: true,
+        onRevealPressed: () {
+          setState(() {
+            _isPhoneNumberRevealed = !_isPhoneNumberRevealed;
+          });
+        },
+      ),
+      _buildProfileInfoCard(
+        'Address',
+        addressController,
+        _isAddressRevealed
+            ? _userData['address'] ?? 'Not available'
+            : '**********',
+        hidden: true,
+        onRevealPressed: () {
+          setState(() {
+            _isAddressRevealed = !_isAddressRevealed;
+          });
+        },
+      ),
+    ];
+  }
+
+  Widget _buildProfileInfoCard(
+    String title,
+    TextEditingController controller,
+    String content, {
+    bool hidden = false,
     VoidCallback? onRevealPressed,
+    bool isEmail = false,
   }) {
-    return Row(
-      children: [
-        Expanded(
-          flex: 2,
-          child: Text(
-            title,
-            style: const TextStyle(fontWeight: FontWeight.bold),
+    return Card(
+      margin: const EdgeInsets.symmetric(vertical: 8),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      elevation: 2,
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Row(
+          children: [
+            Expanded(
+              flex: 2,
+              child: Text(
+                title,
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ),
+            Expanded(
+              flex: 3,
+              child: _isEditing && !isEmail
+                  ? TextField(
+                      controller: controller,
+                      decoration: InputDecoration(
+                        filled: true,
+                        fillColor: Colors.grey.shade200,
+                        contentPadding: const EdgeInsets.all(12),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(10),
+                          borderSide: BorderSide.none,
+                        ),
+                        hintText: title,
+                      ),
+                    )
+                  : Text(
+                      content,
+                      style: const TextStyle(fontSize: 16),
+                    ),
+            ),
+            if (hidden && !_isEditing)
+              IconButton(
+                icon:
+                    const Icon(Icons.visibility, size: 20, color: Colors.green),
+                onPressed: onRevealPressed,
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+// Method to create the Account Management card with Change Password button
+  Widget _buildAccountManagementCard() {
+    return Center(
+      child: Card(
+        margin: const EdgeInsets.symmetric(vertical: 8),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        elevation: 2,
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text(
+                'Account Management',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              ElevatedButton(
+                onPressed: () {
+                  // Show ForgotPasswordDialog when the button is pressed
+                  showDialog(
+                    context: context,
+                    builder: (context) => const ForgotPasswordDialog(),
+                  );
+                },
+                child: const Text('Change Password'),
+              ),
+            ],
           ),
         ),
-        Expanded(
-          flex: 3,
-          child: _isEditing
-              ? TextField(
-                  controller: controller,
-                  decoration: InputDecoration(
-                    hintText: title,
-                  ),
-                )
-              : Text(content),
-        ),
-        if (hidden && !_isEditing)
-          IconButton(
-            icon: Icon(Icons.remove_red_eye),
-            onPressed: onRevealPressed,
-          ),
-      ],
+      ),
     );
   }
 }

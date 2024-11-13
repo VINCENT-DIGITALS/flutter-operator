@@ -106,7 +106,20 @@ dependencies:
   firebase_storage: ^11.7.7
   get: ^4.6.6
   get_storage: ^2.1.1
-  
+  syncfusion_flutter_charts: 27.1.56
+  flutter_map: ^6.1.0
+  latlong2: ^0.9.1
+  # flutter_map_tile_caching: ^9.0.1
+  flutter_map_marker_popup: ^6.1.2
+  connectivity_plus: ^6.1.0
+  share_plus: ^10.0.0
+  flutter_map_cancellable_tile_provider: ^2.0.0
+  excel: ^4.0.6
+  file_saver: ^0.2.13
+  syncfusion_flutter_xlsio: ^27.1.56
+  firebase_messaging: ^14.9.4
+  cloud_functions: ^4.7.6
+
 dev_dependencies:
   flutter_lints: ^3.0.0
   flutter_test:
@@ -119,3 +132,11 @@ flutter:
     - lib/images/BAYANiLOGO.png
     - lib/images/LOGODESC.png
     - .env
+    - assets/images/LOGOAPP.png
+    - assets/images/placeholder_image.png
+    - assets/images/LOGOAPP.png
+    - assets/images/LOGODESC.png
+    - assets/images/ICONLAUNCHER.png
+    - assets/sounds/emergencynotifsound1.mp3
+    - assets/sounds/emergencynotifsound.wav
+    - assets/sounds/chatsound.wav
