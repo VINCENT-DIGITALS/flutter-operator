@@ -86,22 +86,48 @@ class _HomePageState extends State<HomePage> {
                               valueListenable: _isExpanded,
                               builder: (context, isExpanded, child) {
                                 return GestureDetector(
-                                  child: Row(
-                                    mainAxisSize: MainAxisSize
-                                        .max, // Keep row as compact as possible
-                                    children: [
-                                      Text(
-                                        'Time left until next weather data fetch: $timeLeft',
-                                        style: TextStyle(
-                                          fontSize: 18,
-                                          fontWeight: FontWeight.bold,
-                                          color: Colors.blue,
-                                        ),
-                                        overflow: TextOverflow.ellipsis,
-                                      ),
-                                      const SizedBox(
-                                          width: 4), // Add minimal spacing
-                                    ],
+                                  child: LayoutBuilder(
+                                    builder: (context, constraints) {
+                                      if (constraints.maxWidth > 400) {
+                                        // Use Row for wider screens
+                                        return Row(
+                                          mainAxisSize: MainAxisSize.max,
+                                          children: [
+                                            Expanded(
+                                              child: Text(
+                                                'Time left until next weather data fetch: $timeLeft',
+                                                style: TextStyle(
+                                                  fontSize: 18,
+                                                  fontWeight: FontWeight.bold,
+                                                  color: Colors.blue,
+                                                ),
+                                                overflow: TextOverflow.ellipsis,
+                                              ),
+                                            ),
+                                            const SizedBox(width: 4),
+                                          ],
+                                        );
+                                      } else {
+                                        // Use Column for smaller screens
+                                        return Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: [
+                                            Text(
+                                              'Time left until next weather data fetch: $timeLeft',
+                                              style: TextStyle(
+                                                fontSize: 16,
+                                                fontWeight: FontWeight.bold,
+                                                color: Colors.blue,
+                                              ),
+                                              maxLines: 2,
+                                              overflow: TextOverflow.ellipsis,
+                                            ),
+                                            const SizedBox(height: 4),
+                                          ],
+                                        );
+                                      }
+                                    },
                                   ),
                                 );
                               },

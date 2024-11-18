@@ -43,7 +43,13 @@ class _ChatListPageState extends State<ChatListPage> {
             ElevatedButton(
               onPressed: () async {
                 if (_chatNameController.text.isNotEmpty) {
-                  await _addChatToFirestore(_chatNameController.text.trim());
+                  bool confirm = await _showConfirmationDialog(
+                    title: 'Confirm New Chat',
+                    content: 'Are you sure you want to create this chat?',
+                  );
+                  if (confirm) {
+                    await _addChatToFirestore(_chatNameController.text.trim());
+                  }
                   Navigator.of(context).pop();
                 }
               },
@@ -66,7 +72,46 @@ class _ChatListPageState extends State<ChatListPage> {
       'participants': [
         FirebaseFirestore.instance.doc('/operator/${currentUser!.uid}')
       ],
+      'archived': false,
     });
+  }
+
+  Future<void> _archiveChat(String chatId) async {
+    bool confirm = await _showConfirmationDialog(
+      title: 'Confirm Archive',
+      content: 'Are you sure you want to archive this chat?',
+    );
+    if (confirm) {
+      await chats.doc(chatId).update({'archived': true});
+    }
+  }
+
+  Future<bool> _showConfirmationDialog(
+      {required String title, required String content}) async {
+    return await showDialog(
+          context: context,
+          builder: (BuildContext context) {
+            return AlertDialog(
+              title: Text(title),
+              content: Text(content),
+              actions: [
+                TextButton(
+                  onPressed: () {
+                    Navigator.of(context).pop(false);
+                  },
+                  child: Text('Cancel'),
+                ),
+                ElevatedButton(
+                  onPressed: () {
+                    Navigator.of(context).pop(true);
+                  },
+                  child: Text('Confirm'),
+                ),
+              ],
+            );
+          },
+        ) ??
+        false;
   }
 
   @override
@@ -94,7 +139,7 @@ class _ChatListPageState extends State<ChatListPage> {
             ),
           Expanded(
             child: StreamBuilder<QuerySnapshot>(
-              stream: chats.snapshots(),
+              stream: chats.where('archived', isEqualTo: false).snapshots(),
               builder: (context, snapshot) {
                 if (!snapshot.hasData) {
                   return Center(child: CircularProgressIndicator());
@@ -110,7 +155,7 @@ class _ChatListPageState extends State<ChatListPage> {
                 }).toList();
 
                 if (filteredChats.isEmpty) {
-                  return Center(child: Text('No chat Available'));
+                  return Center(child: Text('No chat available'));
                 }
 
                 return ListView.builder(
@@ -150,16 +195,19 @@ class _ChatListPageState extends State<ChatListPage> {
                           lastMessage,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: TextStyle(color: Colors.grey[600]),
+                          style: TextStyle(color: Colors.black),
                         ),
-                        trailing: lastMessageTime != null
-                            ? Column(
+                        trailing: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            if (lastMessageTime != null)
+                              Column(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
                                   Text(
                                     "${lastMessageTime.hour}:${lastMessageTime.minute.toString().padLeft(2, '0')}",
                                     style: TextStyle(
-                                      color: Colors.grey[500],
+                                      color: Colors.black,
                                       fontSize: 12,
                                     ),
                                   ),
@@ -167,13 +215,20 @@ class _ChatListPageState extends State<ChatListPage> {
                                   Text(
                                     "${lastMessageTime.day}/${lastMessageTime.month}/${lastMessageTime.year}",
                                     style: TextStyle(
-                                      color: Colors.grey[500],
+                                      color: Colors.black,
                                       fontSize: 10,
                                     ),
                                   ),
                                 ],
-                              )
-                            : SizedBox(),
+                              ),
+                            IconButton(
+                              icon: Icon(Icons.archive, color: Colors.red,),
+                              onPressed: () => _archiveChat(chatData.id),
+                              color: Colors.grey[600],
+                              tooltip: 'Archive Chat',
+                            ),
+                          ],
+                        ),
                         onTap: () {
                           Navigator.push(
                             context,
