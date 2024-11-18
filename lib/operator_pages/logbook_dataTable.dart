@@ -60,14 +60,14 @@ class LogBookDataTableSource extends DataTableSource {
                 ),
               ),
               Tooltip(
-                message: 'Delete Report',
+                message: 'Archive Logbook',
                 child: IconButton(
                   icon: Icon(
                     Icons.delete_forever,
                     color: Colors.redAccent,
                   ),
                   onPressed: () {
-                    _showDeleteLogBookDialog(context, user['id']);
+                    _showArchiveLogBookDialog(context, user['id']);
                   },
                 ),
               ),
@@ -79,15 +79,54 @@ class LogBookDataTableSource extends DataTableSource {
             _formatTimestamp(user[key] as Timestamp?),
             style: TextStyle(fontSize: 14, color: Colors.black87),
           ));
+        } else if (key == "seriousness") {
+          // Style the cell using Chips based on the seriousness value
+          final seriousness = user[key]?.toString() ?? 'N/A';
+          Color seriousnessColor;
+
+          switch (seriousness.toLowerCase()) {
+            case 'severe':
+              seriousnessColor = Colors.redAccent;
+              break;
+            case 'moderate':
+              seriousnessColor = Colors.orangeAccent;
+              break;
+            case 'minor':
+              seriousnessColor = Colors.yellowAccent;
+              break;
+            default:
+              seriousnessColor =
+                  Colors.grey; // Default color for unknown values
+          }
+
+          return DataCell(
+            Container(
+              padding: const EdgeInsets.symmetric(vertical: 6.0),
+              child: Chip(
+                label: Text(
+                  seriousness,
+                  style: TextStyle(
+                      color: const Color.fromARGB(255, 0, 0, 0),
+                      fontWeight: FontWeight.bold),
+                ),
+                backgroundColor: seriousnessColor,
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12.0, vertical: 6.0),
+              ),
+            ),
+          );
         } else {
           // Display other fields with truncation and default to 'N/A' if null
-          return DataCell(
+           return DataCell(
             Padding(
               padding: const EdgeInsets.symmetric(vertical: 8.0),
-              child: Text(
-                _truncateString(user[key]?.toString() ?? 'N/A'),
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(fontSize: 14, color: Colors.black87),
+              child: Tooltip(
+                message: user[key]?.toString() ?? 'N/A',
+                child: Text(
+                  _truncateString(user[key]?.toString() ?? 'N/A'),
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(fontSize: 14, color: Colors.black87),
+                ),
               ),
             ),
           );
@@ -96,14 +135,14 @@ class LogBookDataTableSource extends DataTableSource {
     );
   }
 
-  void _showDeleteLogBookDialog(BuildContext context, String userId) {
+  void _showArchiveLogBookDialog(BuildContext context, String userId) {
     showDialog(
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: Text('Delete Lo'),
+          title: Text('Archive Logbook'),
           content: Text(
-              'Are you sure you want to delete this report? This action is unrecoverable.'),
+              'Are you sure you want to archive this Logbook? You can restore it later if needed.'),
           actions: [
             TextButton(
               child: Text('Cancel'),
@@ -112,15 +151,15 @@ class LogBookDataTableSource extends DataTableSource {
               },
             ),
             ElevatedButton(
-              child: Text('Delete'),
+              child: Text('Archive'),
               style: ElevatedButton.styleFrom(
                   foregroundColor: Colors.white,
-                  backgroundColor: Colors.redAccent),
+                  backgroundColor: Colors.orangeAccent),
               onPressed: () async {
                 try {
-                  await _dbService.deleteLogBook(userId);
+                  await _dbService.archiveLogBook(userId);
                   Fluttertoast.showToast(
-                    msg: "Report deleted successfully",
+                    msg: "Logbook archived successfully",
                     toastLength: Toast.LENGTH_SHORT,
                     gravity: ToastGravity.BOTTOM,
                     backgroundColor: Colors.green,
@@ -129,7 +168,7 @@ class LogBookDataTableSource extends DataTableSource {
                   );
                 } catch (e) {
                   Fluttertoast.showToast(
-                    msg: "Failed to delete the report",
+                    msg: "Failed to archive the Logbook",
                     toastLength: Toast.LENGTH_SHORT,
                     gravity: ToastGravity.BOTTOM,
                     backgroundColor: Colors.red,

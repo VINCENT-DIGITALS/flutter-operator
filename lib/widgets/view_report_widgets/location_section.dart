@@ -19,8 +19,8 @@ class LocationSection extends StatefulWidget {
 }
 
 class _LocationSectionState extends State<LocationSection> {
-  StreamSubscription<Position>? _positionStream; // For location updates
-  LatLng? _currentLocation; // Store current location
+  // StreamSubscription<Position>? _positionStream; // For location updates
+  // LatLng? _currentLocation; // Store current location
   final PopupController _popupController = PopupController(); // Manage popups
   List<LatLng> points = [];
   final MapController mapController = MapController();
@@ -28,31 +28,31 @@ class _LocationSectionState extends State<LocationSection> {
   @override
   void initState() {
     super.initState();
-    _getCurrentLocation(); // Fetch the user's current location on load
+    // _getCurrentLocation(); // Fetch the user's current location on load
   }
 
   // Fetches the current location using Geolocator
-  Future<void> _getCurrentLocation() async {
-    // Check permissions
-    LocationPermission permission = await Geolocator.checkPermission();
-    if (permission == LocationPermission.denied ||
-        permission == LocationPermission.deniedForever) {
-      permission = await Geolocator.requestPermission();
-    }
+  // Future<void> _getCurrentLocation() async {
+  //   // Check permissions
+  //   LocationPermission permission = await Geolocator.checkPermission();
+  //   if (permission == LocationPermission.denied ||
+  //       permission == LocationPermission.deniedForever) {
+  //     permission = await Geolocator.requestPermission();
+  //   }
 
-    if (permission == LocationPermission.always ||
-        permission == LocationPermission.whileInUse) {
-      Position position = await Geolocator.getCurrentPosition(
-          desiredAccuracy: LocationAccuracy.high);
+  //   if (permission == LocationPermission.always ||
+  //       permission == LocationPermission.whileInUse) {
+  //     Position position = await Geolocator.getCurrentPosition(
+  //         desiredAccuracy: LocationAccuracy.high);
 
-      setState(() {
-        _currentLocation = LatLng(position.latitude, position.longitude);
-      });
-    } else {
-      // Handle case when permission is denied
-      print("Location permissions are denied.");
-    }
-  }
+  //     setState(() {
+  //       _currentLocation = LatLng(position.latitude, position.longitude);
+  //     });
+  //   } else {
+  //     // Handle case when permission is denied
+  //     print("Location permissions are denied.");
+  //   }
+  // }
 
   // Method to retrieve markers including current and evacuation location
   List<Marker> getMarkers() {
@@ -72,19 +72,19 @@ class _LocationSectionState extends State<LocationSection> {
       ),
     ];
 
-    if (_currentLocation != null) {
-      markers.add(
-        Marker(
-          point: _currentLocation!,
-          child: const Icon(
-            Icons.person_pin_circle,
-            color: Colors.blue,
-            size: 40,
-          ),
-          key: const Key('currentLocationMarker'),
-        ),
-      );
-    }
+    // if (_currentLocation != null) {
+    //   markers.add(
+    //     Marker(
+    //       point: _currentLocation!,
+    //       child: const Icon(
+    //         Icons.person_pin_circle,
+    //         color: Colors.blue,
+    //         size: 40,
+    //       ),
+    //       key: const Key('currentLocationMarker'),
+    //     ),
+    //   );
+    // }
     return markers;
   }
 
@@ -164,17 +164,18 @@ class _LocationSectionState extends State<LocationSection> {
                               return Container(
                                 color: Colors.white,
                                 padding: const EdgeInsets.all(8.0),
-                                child:
-                                    SelectableText('Address: ${widget.data['address']}'),
-                              );
-                            } else if (marker.key ==
-                                const Key('currentLocationMarker')) {
-                              return Container(
-                                color: Colors.white,
-                                padding: const EdgeInsets.all(8.0),
-                                child: const Text('You are here'),
+                                child: SelectableText(
+                                    'Address: ${widget.data['address']}'),
                               );
                             }
+                            // else if (marker.key ==
+                            //     const Key('currentLocationMarker')) {
+                            //   return Container(
+                            //     color: Colors.white,
+                            //     padding: const EdgeInsets.all(8.0),
+                            //     child: const Text('You are here'),
+                            //   );
+                            // }
                             return Container();
                           },
                         ),
@@ -184,18 +185,18 @@ class _LocationSectionState extends State<LocationSection> {
                 ),
               ),
               // Positioned widget for overlay button
-              Positioned(
-                top: 10,
-                right: 50,
-                child: IconButton(
-                  icon: Icon(Icons.my_location, color: Colors.blue),
-                  onPressed: () {
-                    if (_currentLocation != null) {
-                      mapController.move(_currentLocation!, 15.0);
-                    }
-                  },
-                ),
-              ),
+              // Positioned(
+              //   top: 10,
+              //   right: 50,
+              //   child: IconButton(
+              //     icon: Icon(Icons.my_location, color: Colors.blue),
+              //     onPressed: () {
+              //       if (_currentLocation != null) {
+              //         mapController.move(_currentLocation!, 15.0);
+              //       }
+              //     },
+              //   ),
+              // ),
               // Icon button to center map on report location
               Positioned(
                 top: 10,

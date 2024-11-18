@@ -38,13 +38,11 @@ class _GroupChatPageState extends State<GroupChatPage> {
         isLargeScreen: isLargeScreen,
         scaffoldKey: _scaffoldKey,
         title: widget.gChatname,
-        onSettingsPress: () => openSettings(
-            context, widget.chatId), // Pass the onSettingsPress callback
+        onSettingsPress: () => openSettings(context, widget.chatId),
       ),
       drawer: isLargeScreen
           ? null
-          : CustomDrawer(
-              scaffoldKey: _scaffoldKey, currentRoute: '/group_chat'),
+          : CustomDrawer(scaffoldKey: _scaffoldKey, currentRoute: '/chat'),
       body: Row(
         children: [
           // CustomDrawer for large screen
@@ -53,7 +51,7 @@ class _GroupChatPageState extends State<GroupChatPage> {
               width: 250,
               child: CustomDrawer(
                 scaffoldKey: _scaffoldKey,
-                currentRoute: '/group_chat',
+                currentRoute: '/chat',
               ),
             ),
           Expanded(

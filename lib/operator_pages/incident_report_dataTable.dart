@@ -60,14 +60,14 @@ class IncidentReportDataTableSource extends DataTableSource {
                 ),
               ),
               Tooltip(
-                message: 'Delete Report',
+                message: 'Archived Report',
                 child: IconButton(
                   icon: Icon(
                     Icons.delete_forever,
                     color: Colors.redAccent,
                   ),
                   onPressed: () {
-                    _showDeleteReportDialog(context, user['id']);
+                    _showArchiveLogBookDialog(context, user['id']);
                   },
                 ),
               ),
@@ -78,14 +78,53 @@ class IncidentReportDataTableSource extends DataTableSource {
             _formatTimestamp(user[key] as Timestamp?),
             style: TextStyle(fontSize: 14, color: Colors.black87),
           ));
-        } else {
+        } else if (key == "seriousness") {
+          // Style the cell using Chips based on the seriousness value
+          final seriousness = user[key]?.toString() ?? 'N/A';
+          Color seriousnessColor;
+
+          switch (seriousness.toLowerCase()) {
+            case 'severe':
+              seriousnessColor = Colors.redAccent;
+              break;
+            case 'moderate':
+              seriousnessColor = Colors.orangeAccent;
+              break;
+            case 'minor':
+              seriousnessColor = Colors.yellowAccent;
+              break;
+            default:
+              seriousnessColor =
+                  Colors.grey; // Default color for unknown values
+          }
+
           return DataCell(
+            Container(
+              padding: const EdgeInsets.symmetric(vertical: 6.0),
+              child: Chip(
+                label: Text(
+                  seriousness,
+                  style: TextStyle(
+                      color: const Color.fromARGB(255, 0, 0, 0),
+                      fontWeight: FontWeight.bold),
+                ),
+                backgroundColor: seriousnessColor,
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12.0, vertical: 6.0),
+              ),
+            ),
+          );
+        }else {
+            return DataCell(
             Padding(
               padding: const EdgeInsets.symmetric(vertical: 8.0),
-              child: Text(
-                _truncateString(user[key]?.toString() ?? 'N/A'),
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(fontSize: 14, color: Colors.black87),
+              child: Tooltip(
+                message: user[key]?.toString() ?? 'N/A',
+                child: Text(
+                  _truncateString(user[key]?.toString() ?? 'N/A'),
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(fontSize: 14, color: Colors.black87),
+                ),
               ),
             ),
           );
@@ -94,56 +133,56 @@ class IncidentReportDataTableSource extends DataTableSource {
     );
   }
 
-  void _showDeleteReportDialog(BuildContext context, String userId) {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: Text('Delete Report'),
-          content: Text(
-              'Are you sure you want to delete this report? This action is unrecoverable.'),
-          actions: [
-            TextButton(
-              child: Text('Cancel'),
-              onPressed: () {
+void _showArchiveLogBookDialog(BuildContext context, String userId) {
+  showDialog(
+    context: context,
+    builder: (BuildContext context) {
+      return AlertDialog(
+        title: Text('Archive Report'),
+        content: Text(
+            'Are you sure you want to archive this Report? You can restore it later if needed.'),
+        actions: [
+          TextButton(
+            child: Text('Cancel'),
+            onPressed: () {
+              Navigator.of(context).pop();
+            },
+          ),
+          ElevatedButton(
+            child: Text('Archive'),
+            style: ElevatedButton.styleFrom(
+                foregroundColor: Colors.white,
+                backgroundColor: Colors.orangeAccent),
+            onPressed: () async {
+              try {
+                await _dbService.archiveReport(userId);
+                Fluttertoast.showToast(
+                  msg: "Report archived successfully",
+                  toastLength: Toast.LENGTH_SHORT,
+                  gravity: ToastGravity.BOTTOM,
+                  backgroundColor: Colors.green,
+                  textColor: Colors.white,
+                  fontSize: 16.0,
+                );
+              } catch (e) {
+                Fluttertoast.showToast(
+                  msg: "Failed to archive the Report",
+                  toastLength: Toast.LENGTH_SHORT,
+                  gravity: ToastGravity.BOTTOM,
+                  backgroundColor: Colors.red,
+                  textColor: Colors.white,
+                  fontSize: 16.0,
+                );
+              } finally {
                 Navigator.of(context).pop();
-              },
-            ),
-            ElevatedButton(
-              child: Text('Delete'),
-              style: ElevatedButton.styleFrom(
-                  foregroundColor: Colors.white,
-                  backgroundColor: Colors.redAccent),
-              onPressed: () async {
-                try {
-                  await _dbService.deleteReport(userId);
-                  Fluttertoast.showToast(
-                    msg: "Report deleted successfully",
-                    toastLength: Toast.LENGTH_SHORT,
-                    gravity: ToastGravity.BOTTOM,
-                    backgroundColor: Colors.green,
-                    textColor: Colors.white,
-                    fontSize: 16.0,
-                  );
-                } catch (e) {
-                  Fluttertoast.showToast(
-                    msg: "Failed to delete the report",
-                    toastLength: Toast.LENGTH_SHORT,
-                    gravity: ToastGravity.BOTTOM,
-                    backgroundColor: Colors.red,
-                    textColor: Colors.white,
-                    fontSize: 16.0,
-                  );
-                } finally {
-                  Navigator.of(context).pop();
-                }
-              },
-            )
-          ],
-        );
-      },
-    );
-  }
+              }
+            },
+          )
+        ],
+      );
+    },
+  );
+}
 
   @override
   bool get isRowCountApproximate => false;

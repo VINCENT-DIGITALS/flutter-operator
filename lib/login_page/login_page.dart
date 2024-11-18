@@ -199,7 +199,7 @@ class _LoginPageState extends State<LoginPage> {
             mainAxisSize: MainAxisSize.max,
             children: [
               const AutoSizeText(
-                'ADMNISTRATION',
+                'ADMINISTRATION',
                 maxLines: 1,
                 style: TextStyle(
                   fontFamily: 'Inter',

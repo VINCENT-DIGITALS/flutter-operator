@@ -9,8 +9,9 @@ import 'package:administrator/widgets/custom_drawer.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import '../Models/logbook_Deletion_helper.dart';
+import '../Models/logbookArchive_helper.dart';
 import '../widgets/download_options_dialog.dart';
+import 'archivedTables/logbook/Archived_logbook_page.dart';
 import 'incident_report_dataTable.dart';
 import 'logbook_dataTable.dart';
 
@@ -27,7 +28,6 @@ class _LogBookManagementPageState extends State<LogBookManagementPage> {
   String _searchQuery = "";
   late Stream<List<Map<String, dynamic>>> userStream;
   String role = 'Unknown';
-  final String _confirmationText = 'DELETE ALL LOGBOOK';
 
   @override
   void initState() {
@@ -123,14 +123,30 @@ class _LogBookManagementPageState extends State<LogBookManagementPage> {
                                         IconButton(
                                           icon: Icon(Icons.download,
                                               color: Colors.blue),
+                                              tooltip: 'Download Log Book',
                                           onPressed: _showDownloadDialog,
                                         ),
                                         IconButton(
                                           icon: Icon(Icons.delete_forever,
                                               color: Colors.red),
+                                              tooltip: 'Archive Log Book',
                                           onPressed: () {
-                                            LogBookDeletionHelper
+                                            LogBookArchivingHelper
                                                 .initialConfirmation(context);
+                                          },
+                                        ),
+                                        IconButton(
+                                          icon: Icon(Icons.archive,
+                                              color: Colors.orange),
+                                          tooltip: 'View Archived Log Book',
+                                          onPressed: () {
+                                            Navigator.push(
+                                              context,
+                                              MaterialPageRoute(
+                                                builder: (context) =>
+                                                    ArchivedLogBookManagementPage(),
+                                              ),
+                                            );
                                           },
                                         ),
                                       ],
@@ -167,7 +183,8 @@ class _LogBookManagementPageState extends State<LogBookManagementPage> {
                                     } else if (!snapshot.hasData ||
                                         snapshot.data!.isEmpty) {
                                       return Center(
-                                          child: Text('No LogBook record available!'));
+                                          child: Text(
+                                              'No LogBook record available!'));
                                     } else {
                                       return UserAccountsTable(
                                         searchQuery: _searchQuery,
@@ -235,20 +252,24 @@ class _UserAccountsTableState extends State<UserAccountsTable> {
     }).toList();
 
     return DefaultTabController(
-      length: 1,
+      length: 3,
       child: Column(
         children: [
           TabBar(
             labelColor: Colors.deepPurple,
             unselectedLabelColor: Colors.black54,
             tabs: [
-              Tab(text: 'LogBook'),
+              Tab(text: 'Pending'),
+              Tab(text: 'In Progress'),
+              Tab(text: 'Completed'),
             ],
           ),
           Expanded(
             child: TabBarView(
               children: [
-                _buildIncentLogBooksTable(filteredData),
+                _buildLogBooksTable(filteredData, 'Pending'),
+                _buildLogBooksTable(filteredData, 'In Progress'),
+                _buildLogBooksTable(filteredData, 'Completed'),
               ],
             ),
           ),
@@ -257,16 +278,49 @@ class _UserAccountsTableState extends State<UserAccountsTable> {
     );
   }
 
-  Widget _buildIncentLogBooksTable(List<Map<String, dynamic>> filteredData) {
-    // Filter and sort data based on conditions
-    List<Map<String, dynamic>> nonCompletedReports =
-        filteredData.where((item) => item['status'] != 'Completed').toList();
+  Widget _buildLogBooksTable(List<Map<String, dynamic>> data, String tabType) {
+    // Filter data based on tabType and archived field
+    List<Map<String, dynamic>> filteredData;
+    if (tabType == 'Pending') {
+      filteredData = data.where((item) {
+        final status = item['status']?.toString() ?? '';
+        final isArchived =
+            (item['archived'] == true); // Explicit check for true
+        return !isArchived &&
+            (status.isEmpty ||
+                (status != 'Completed' && status != 'In Progress'));
+      }).toList();
+    } else if (tabType == 'In Progress') {
+      filteredData = data.where((item) {
+        final isArchived =
+            (item['archived'] == true); // Explicit check for true
+        return !isArchived && item['status'] == 'In Progress';
+      }).toList();
+    } else if (tabType == 'Completed') {
+      filteredData = data.where((item) {
+        final isArchived =
+            (item['archived'] == true); // Explicit check for true
+        return !isArchived && item['status'] == 'Completed';
+      }).toList();
+    } else {
+      filteredData = [];
+    }
 
-    List<Map<String, dynamic>> completedReports =
-        filteredData.where((item) => item['status'] == 'Completed').toList();
+    // Sort data by seriousness priority and latest timestamp
+    filteredData.sort((a, b) {
+      // Define seriousness priority
+      const seriousnessPriority = {'Severe': 3, 'Moderate': 2, 'Minor': 1};
 
-// Sort each group by latest timestamp
-    nonCompletedReports.sort((a, b) {
+      // Get seriousness priority values (default to 0 if not defined)
+      int seriousnessA = seriousnessPriority[a['seriousness']] ?? 0;
+      int seriousnessB = seriousnessPriority[b['seriousness']] ?? 0;
+
+      // Compare seriousness first
+      if (seriousnessA != seriousnessB) {
+        return seriousnessB.compareTo(seriousnessA); // Descending order
+      }
+
+      // If seriousness is equal, compare timestamps
       DateTime timestampA = (a['timestamp'] is Timestamp)
           ? a['timestamp'].toDate()
           : (a['timestamp'] ?? DateTime(0));
@@ -277,22 +331,6 @@ class _UserAccountsTableState extends State<UserAccountsTable> {
 
       return timestampB.compareTo(timestampA); // Sort in descending order
     });
-
-    completedReports.sort((a, b) {
-      DateTime timestampA = (a['timestamp'] is Timestamp)
-          ? a['timestamp'].toDate()
-          : (a['timestamp'] ?? DateTime(0));
-
-      DateTime timestampB = (b['timestamp'] is Timestamp)
-          ? b['timestamp'].toDate()
-          : (b['timestamp'] ?? DateTime(0));
-
-      return timestampB.compareTo(timestampA); // Sort in descending order
-    });
-
-// Combine both lists, prioritizing non-completed reports
-    List<Map<String, dynamic>> sortedData =
-        nonCompletedReports + completedReports;
 
     return SingleChildScrollView(
       child: LayoutBuilder(
@@ -311,7 +349,7 @@ class _UserAccountsTableState extends State<UserAccountsTable> {
 
           return PaginatedDataTable(
             columns: columns,
-            source: LogBookDataTableSource(sortedData, columnKeys, context),
+            source: LogBookDataTableSource(filteredData, columnKeys, context),
             rowsPerPage: 9,
             showCheckboxColumn: false,
             columnSpacing: 20,

@@ -8,6 +8,7 @@ import 'package:flutter/widgets.dart';
 import 'view_Logbook_widget/responder_detail_section.dart';
 import 'view_Logbook_widget/vehicle_detail_section.dart';
 import 'view_Logbook_widget/victim_detail_section.dart';
+
 class ViewLogBookDialog extends StatelessWidget {
   final String logBookID;
 
@@ -27,7 +28,7 @@ class ViewLogBookDialog extends StatelessWidget {
         return reportData;
       }
     } catch (e) {
-      print("Error fetching report data: $e");
+      print("Error fetching logbook data: $e");
     }
     return null;
   }
@@ -45,9 +46,9 @@ class ViewLogBookDialog extends StatelessWidget {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return Center(child: CircularProgressIndicator());
           } else if (snapshot.hasError) {
-            return Center(child: Text("Error fetching report data"));
+            return Center(child: Text("Error fetching Logbook data"));
           } else if (!snapshot.hasData || snapshot.data == null) {
-            return Center(child: Text("Report not found"));
+            return Center(child: Text("Logbook not found"));
           } else {
             final data = snapshot.data!;
             return LayoutBuilder(
@@ -102,11 +103,17 @@ class ViewLogBookDialog extends StatelessWidget {
                                       LogBookDescriptionSection(data: data),
                                     ],
                                   ),
+                                  Column(
+                                    children: [
+                                      LogBookResponderDetailSection(data: data),
+                                      SizedBox(height: 8),
+                                      LogBookVictimDetailSection(data: data),
+                                      SizedBox(height: 8),
+                                      LogBookVehicleDetailSection(data: data),
+                                    ],
+                                  ),
                                   LogBookLocationSection(
                                       context: context, data: data),
-                                  LogBookResponderDetailSection(data: data),
-                                  LogBookVictimDetailSection(data: data),
-                                  LogBookVehicleDetailSection(data: data),
                                 ],
                               ),
                       ],

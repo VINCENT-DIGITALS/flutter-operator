@@ -42,7 +42,8 @@ class UserDataTableSource extends DataTableSource {
                 onPressed: () {
                   showDialog(
                     context: context,
-                    builder: (context) => CitizenProfileDialog(userId: user['id']),
+                    builder: (context) =>
+                        CitizenProfileDialog(userId: user['id']),
                   );
                 },
               ),
@@ -70,13 +71,17 @@ class UserDataTableSource extends DataTableSource {
             style: TextStyle(fontSize: 14, color: Colors.black87),
           ));
         } else {
+          // Add tooltip for name and email
           return DataCell(
             Padding(
               padding: const EdgeInsets.symmetric(vertical: 8.0),
-              child: Text(
-                _truncateString(user[key.toLowerCase()]?.toString() ?? ''),
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(fontSize: 14, color: Colors.black87),
+              child: Tooltip(
+                message: user[key]?.toString() ?? 'N/A',
+                child: Text(
+                  _truncateString(user[key]?.toString() ?? 'N/A'),
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(fontSize: 14, color: Colors.black87),
+                ),
               ),
             ),
           );

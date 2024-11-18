@@ -9,8 +9,9 @@ import 'package:administrator/widgets/custom_drawer.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import '../Models/reports_Deletion_helper.dart';
+import '../Models/reportsArchive_helper.dart';
 import '../widgets/Report_download_options_dialog.dart';
+import 'archivedTables/incidentReports/Archived_incident_reports_page.dart';
 import 'incident_report_dataTable.dart'; // Import CustomDrawer
 
 class IncidentReportManagementPage extends StatefulWidget {
@@ -127,14 +128,30 @@ class _IncidentReportManagementPageState
                                           IconButton(
                                             icon: Icon(Icons.download,
                                                 color: Colors.blue),
+                                                tooltip: 'Download Citizen Reports',
                                             onPressed: _showDownloadDialog,
                                           ),
                                           IconButton(
                                             icon: Icon(Icons.delete_forever,
                                                 color: Colors.red),
+                                                tooltip: 'Archive Citizen Reports',
                                             onPressed: () {
-                                              ReportsDeletionHelper
+                                              ReportsArchivalHelper
                                                   .initialConfirmation(context);
+                                            },
+                                          ),
+                                          IconButton(
+                                            icon: Icon(Icons.archive,
+                                                color: Colors.orange),
+                                            tooltip: 'View Archived Citizen Reports',
+                                            onPressed: () {
+                                              Navigator.push(
+                                                context,
+                                                MaterialPageRoute(
+                                                  builder: (context) =>
+                                                      Archived_IncidentReportManagementPage(),
+                                                ),
+                                              );
                                             },
                                           ),
                                         ],
@@ -239,20 +256,24 @@ class _UserAccountsTableState extends State<UserAccountsTable> {
     }).toList();
 
     return DefaultTabController(
-      length: 1,
+      length: 3, // Three tabs
       child: Column(
         children: [
           TabBar(
             labelColor: Colors.deepPurple,
             unselectedLabelColor: Colors.black54,
             tabs: [
-              Tab(text: 'Incident Reports'),
+              Tab(text: 'Pending'),
+              Tab(text: 'In Progress'),
+              Tab(text: 'Completed'),
             ],
           ),
           Expanded(
             child: TabBarView(
               children: [
-                _buildIncentReportsTable(filteredData),
+                _buildIncidentReportsTable(filteredData, 'Pending'),
+                _buildIncidentReportsTable(filteredData, 'In Progress'),
+                _buildIncidentReportsTable(filteredData, 'Completed'),
               ],
             ),
           ),
@@ -261,16 +282,48 @@ class _UserAccountsTableState extends State<UserAccountsTable> {
     );
   }
 
-  Widget _buildIncentReportsTable(List<Map<String, dynamic>> filteredData) {
-    // Filter and sort data based on conditions
-    List<Map<String, dynamic>> nonCompletedReports =
-        filteredData.where((item) => item['status'] != 'Completed').toList();
+  Widget _buildIncidentReportsTable(
+      List<Map<String, dynamic>> data, String tabType) {
+    // Filter data based on tabType and archived field
+    List<Map<String, dynamic>> filteredData;
+    if (tabType == 'Pending') {
+      filteredData = data.where((item) {
+        final status = item['status']?.toString() ?? '';
+        final isArchived =
+            item['archived'] ?? false; // Default to false if null
+        return !isArchived &&
+            (status.isEmpty ||
+                (status != 'Completed' && status != 'In Progress'));
+      }).toList();
+    } else if (tabType == 'In Progress') {
+      filteredData = data.where((item) {
+        final isArchived = item['archived'] ?? false;
+        return !isArchived && item['status'] == 'In Progress';
+      }).toList();
+    } else if (tabType == 'Completed') {
+      filteredData = data.where((item) {
+        final isArchived = item['archived'] ?? false;
+        return !isArchived && item['status'] == 'Completed';
+      }).toList();
+    } else {
+      filteredData = [];
+    }
 
-    List<Map<String, dynamic>> completedReports =
-        filteredData.where((item) => item['status'] == 'Completed').toList();
+    // Sort data by seriousness priority and latest timestamp
+    filteredData.sort((a, b) {
+      // Define seriousness priority
+      const seriousnessPriority = {'Severe': 3, 'Moderate': 2, 'Minor': 1};
 
-// Sort each group by latest timestamp
-    nonCompletedReports.sort((a, b) {
+      // Get seriousness priority values (default to 0 if not defined)
+      int seriousnessA = seriousnessPriority[a['seriousness']] ?? 0;
+      int seriousnessB = seriousnessPriority[b['seriousness']] ?? 0;
+
+      // Compare seriousness first
+      if (seriousnessA != seriousnessB) {
+        return seriousnessB.compareTo(seriousnessA); // Descending order
+      }
+
+      // If seriousness is equal, compare timestamps
       DateTime timestampA = (a['timestamp'] is Timestamp)
           ? a['timestamp'].toDate()
           : (a['timestamp'] ?? DateTime(0));
@@ -281,22 +334,6 @@ class _UserAccountsTableState extends State<UserAccountsTable> {
 
       return timestampB.compareTo(timestampA); // Sort in descending order
     });
-
-    completedReports.sort((a, b) {
-      DateTime timestampA = (a['timestamp'] is Timestamp)
-          ? a['timestamp'].toDate()
-          : (a['timestamp'] ?? DateTime(0));
-
-      DateTime timestampB = (b['timestamp'] is Timestamp)
-          ? b['timestamp'].toDate()
-          : (b['timestamp'] ?? DateTime(0));
-
-      return timestampB.compareTo(timestampA); // Sort in descending order
-    });
-
-// Combine both lists, prioritizing non-completed reports
-    List<Map<String, dynamic>> sortedData =
-        nonCompletedReports + completedReports;
 
     return SingleChildScrollView(
       child: LayoutBuilder(
@@ -314,8 +351,8 @@ class _UserAccountsTableState extends State<UserAccountsTable> {
 
           return PaginatedDataTable(
             columns: columns,
-            source:
-                IncidentReportDataTableSource(sortedData, columnKeys, context),
+            source: IncidentReportDataTableSource(
+                filteredData, columnKeys, context),
             rowsPerPage: 9,
             showCheckboxColumn: false,
             columnSpacing: 20,

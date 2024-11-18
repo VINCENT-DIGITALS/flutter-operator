@@ -9,6 +9,7 @@ import '../operator_pages/chatPage/chat_list.dart';
 import '../operator_pages/incident_reports_page.dart';
 import '../operator_pages/logbook_page.dart';
 import '../operator_pages/mapPage/map_page.dart';
+import '../operator_pages/smsPage/smsPage.dart';
 import '../services/database_service.dart';
 
 class CustomDrawer extends StatefulWidget {
@@ -29,7 +30,8 @@ class _CustomDrawerState extends State<CustomDrawer> {
   final AuthService _authService = AuthService();
 
   bool isLoading = true;
-
+  // Add state to track subcategory visibility
+  bool showSubcategories = false;
   @override
   void initState() {
     super.initState();
@@ -115,12 +117,27 @@ class _CustomDrawerState extends State<CustomDrawer> {
                 widget.currentRoute),
             _buildDrawerItem(Icons.book, 'Log Book', '/logbook',
                 LogBookManagementPage(), widget.currentRoute),
-            _buildDrawerItem(Icons.sms, 'SMS', '/sms', AnnouncementManagement(),
+            _buildDrawerItem(Icons.sms, 'SMS', '/sms', SmsManagementPage(),
                 widget.currentRoute),
             _buildDrawerItem(Icons.map, 'Weather Map', '/map', MapPageMain(),
                 widget.currentRoute),
-            _buildDrawerItem(Icons.chat, 'Group Chat', '/group_chat',
-                ChatListPage(), widget.currentRoute),
+            _buildDrawerItem(
+              Icons.chat,
+              'Group Chats',
+              '/group_chat',
+              ChatListPage(),
+              widget.currentRoute,
+              onTap: () {
+                setState(() {
+                  showSubcategories = !showSubcategories;
+                });
+              },
+              isExpandable: true,
+              isExpanded: showSubcategories,
+            ),
+            if (showSubcategories) ...[
+              _buildSubcategoryItem('Team Chat'),
+            ],
             const Divider(color: Colors.white70),
             const Padding(
               padding: EdgeInsets.symmetric(horizontal: 16.0),
@@ -153,6 +170,27 @@ class _CustomDrawerState extends State<CustomDrawer> {
     );
   }
 
+  Widget _buildSubcategoryItem(String title) {
+    return Padding(
+      padding: const EdgeInsets.only(left: 40.0),
+      child: ListTile(
+        title: Text(
+          title,
+          style: const TextStyle(color: Colors.white70),
+        ),
+        onTap: () {
+          // Handle subcategory action
+        },
+      ),
+    );
+  }
+
+  void _showSubcategories() {
+    setState(() {
+      showSubcategories = !showSubcategories;
+    });
+  }
+
   Widget _buildDrawerHeader() {
     return DrawerHeader(
       decoration: const BoxDecoration(
@@ -161,15 +199,34 @@ class _CustomDrawerState extends State<CustomDrawer> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          CircleAvatar(
-            backgroundColor: Colors.white,
-            radius: 30,
-            child: Text(
-              'O',
-              style: const TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-                color: Color(0xFF202D40),
+          GestureDetector(
+            onTap: () {
+              // Show full-screen image when tapped
+              showDialog(
+                context: context,
+                builder: (context) => Dialog(
+                  backgroundColor: Colors.transparent,
+                  child: GestureDetector(
+                    onTap: () =>
+                        Navigator.of(context).pop(), // Close dialog on tap
+                    child: ClipRRect(
+                      borderRadius:
+                          BorderRadius.circular(10), // Optional rounded corners
+                      child: Image.asset(
+                        'assets/images/LOGOAPP0.png', // Your image path
+                        fit: BoxFit.contain,
+                      ),
+                    ),
+                  ),
+                ),
+              );
+            },
+            child: ClipOval(
+              child: Image.asset(
+                'assets/images/LOGOAPP0.png', // Your image path
+                width: 60,
+                height: 60,
+                fit: BoxFit.cover,
               ),
             ),
           ),
@@ -192,8 +249,11 @@ class _CustomDrawerState extends State<CustomDrawer> {
     String title,
     String route,
     Widget destinationPage,
-    String currentRoute,
-  ) {
+    String currentRoute, {
+    VoidCallback? onTap,
+    bool isExpandable = false,
+    bool isExpanded = false,
+  }) {
     bool isSelected = currentRoute == route;
     return ListTile(
       leading: Icon(

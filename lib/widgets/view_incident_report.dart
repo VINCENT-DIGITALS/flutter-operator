@@ -30,9 +30,9 @@ Future<Map<String, dynamic>?> _fetchReportData() async {
 
       if (citizenDoc.exists) {
         // Add the citizen's name to report data
-        reportData['citizenName'] = citizenDoc['displayName'];
+        reportData['email'] = citizenDoc['email'];
       } else {
-        reportData['citizenName'] = 'Unknown'; // Handle missing citizen data
+        reportData['email'] = 'Unknown'; // Handle missing citizen data
       }
 
       return reportData;

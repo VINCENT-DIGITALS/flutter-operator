@@ -422,10 +422,10 @@ class DatabaseService {
 
                 "status": doc.data().containsKey('status')
                     ? doc.get('status')
-                    : 'Unknown',
+                    : 'Pending',
                 "acceptedBy": doc.data().containsKey('acceptedBy')
                     ? doc.get('acceptedBy')
-                    : 'Unknown',
+                    : 'Pending',
 
                 "incidentType": doc.data().containsKey('incidentType')
                     ? doc.get('incidentType')
@@ -439,6 +439,9 @@ class DatabaseService {
                 "timestamp": doc.data().containsKey('timestamp')
                     ? doc.get('timestamp')
                     : 'Unknown', // Added email field
+                "archived": doc.data().containsKey('archived')
+                    ? doc.get('archived') // Keep as Timestamp if available
+                    : false, // Set to false if not available
 
                 // "reporterId": doc.data().containsKey('reporterId')
                 //     ? doc.get('reporterId') // Assuming this is a Timestamp
@@ -447,11 +450,31 @@ class DatabaseService {
             }).toList());
   }
 
-  Future<void> deleteReport(String reportId) async {
+  Future<bool> archiveReport(String userId) async {
     try {
-      await _db.collection('reports').doc(reportId).delete();
+      // Set the `archived` field to `true` instead of deleting the document
+      await _db.collection('reports').doc(userId).set(
+        {'archived': true},
+        SetOptions(merge: true), // Ensure existing fields are not overwritten
+      );
+      return true;
     } catch (e) {
-      throw Exception("Error deleting report: $e");
+      // Handle or log the error
+      return false;
+    }
+  }
+
+  Future<bool> unArchiveReport(String userId) async {
+    try {
+      // Set the `archived` field to `true` instead of deleting the document
+      await _db.collection('reports').doc(userId).set(
+        {'archived': false},
+        SetOptions(merge: true), // Ensure existing fields are not overwritten
+      );
+      return true;
+    } catch (e) {
+      // Handle or log the error
+      return false;
     }
   }
 
@@ -486,14 +509,106 @@ class DatabaseService {
                 "timestamp": doc.data().containsKey('timestamp')
                     ? doc.get('timestamp') // Keep as Timestamp if available
                     : null, // Set to null if not available
+                "archived": doc.data().containsKey('archived')
+                    ? doc.get('archived') // Keep as Timestamp if available
+                    : false, // Set to false if not available
               };
             }).toList());
   }
 
-  Future<bool> deleteLogBook(String userId) async {
+  Future<bool> archiveLogBook(String userId) async {
+    try {
+      // Set the `archived` field to `true` instead of deleting the document
+      await _db.collection('logBook').doc(userId).set(
+        {'archived': true},
+        SetOptions(merge: true), // Ensure existing fields are not overwritten
+      );
+      return true;
+    } catch (e) {
+      // Handle or log the error
+      return false;
+    }
+  }
+
+  Future<bool> unArchiveLogBook(String userId) async {
+    try {
+      // Set the `archived` field to `true` instead of deleting the document
+      await _db.collection('logBook').doc(userId).set(
+        {'archived': false},
+        SetOptions(merge: true), // Ensure existing fields are not overwritten
+      );
+      return true;
+    } catch (e) {
+      // Handle or log the error
+      return false;
+    }
+  }
+
+  Future<bool> unArchiveSMS(String userId) async {
+    try {
+      // Set the `archived` field to `true` instead of deleting the document
+      await _db.collection('sms').doc(userId).set(
+        {'archived': false},
+        SetOptions(merge: true), // Ensure existing fields are not overwritten
+      );
+      return true;
+    } catch (e) {
+      // Handle or log the error
+      return false;
+    }
+  }
+
+  Future<bool> archiveSMS(String userId) async {
+    try {
+      // Set the `archived` field to `true` instead of deleting the document
+      await _db.collection('sms').doc(userId).set(
+        {'archived': true},
+        SetOptions(merge: true), // Ensure existing fields are not overwritten
+      );
+      return true;
+    } catch (e) {
+      // Handle or log the error
+      return false;
+    }
+  }
+
+  Stream<List<Map<String, dynamic>>> fetchSMSData() {
+    return _db
+        .collection('sms')
+        .orderBy('timestamp', descending: true)
+        .snapshots()
+        .map((snapshot) => snapshot.docs.map((doc) {
+              return {
+                "id": doc.id,
+                "message": doc.data().containsKey('message')
+                    ? doc.get('message')
+                    : 'Unknown',
+                "status": doc.data().containsKey('status')
+                    ? doc.get('status')
+                    : 'Unknown',
+                "numFailed": doc.data().containsKey('numFailed')
+                    ? doc.get('numFailed')
+                    : 'Unknown',
+                "numSuccess": doc.data().containsKey('numSuccess')
+                    ? doc.get('numSuccess')
+                    : 'Unknown',
+                "timestamp": doc.data().containsKey('timestamp')
+                    ? doc.get('timestamp')
+                    : 'Unknown', // Added email field
+                "archived": doc.data().containsKey('archived')
+                    ? doc.get('archived') // Keep as Timestamp if available
+                    : false, // Set to false if not available
+                // "reporterId": doc.data().containsKey('reporterId')
+                //     ? doc.get('reporterId') // Assuming this is a Timestamp
+                //     : null, // Set to null if not available
+              };
+            }).toList());
+  }
+
+  Future<bool> deleteSMS(String userId) async {
     try {
       // Perform the delete operation
-      await _db.collection('logBook').doc(userId).delete();
+      await _db.collection('sms').doc(userId).delete();
       return true;
     } catch (e) {
       // Handle or log the error

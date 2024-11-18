@@ -10,7 +10,15 @@ import 'firebase_options.dart';
 import 'package:administrator/consts/consts.dart';
 import 'package:administrator/services/weather_service.dart';
 
-import 'operator_pages/mapPage/weatherService.dart';  // Import your WeatherService here
+import 'operator_pages/announcement_page.dart';
+import 'operator_pages/chatPage/chat_list.dart';
+import 'operator_pages/citizenAccounts_page.dart';
+import 'operator_pages/incident_reports_page.dart';
+import 'operator_pages/logbook_page.dart';
+import 'operator_pages/mapPage/map_page.dart';
+import 'operator_pages/mapPage/weatherService.dart';
+import 'operator_pages/responderAccount_page.dart';
+import 'operator_pages/smsPage/smsPage.dart';  // Import your WeatherService here
 
 void main() async {
   await dotenv.load(fileName: '.env');
@@ -56,9 +64,23 @@ class _MyAppState extends State<MyApp> {
 
   @override
   Widget build(BuildContext context) {
-    return const MaterialApp(
+    return  MaterialApp(
       debugShowCheckedModeBanner: false,
-      home: SplashScreen(),  // Your home screen with splash loading
+      // home: SplashScreen(),  // Your home screen with splash loading
+      initialRoute: '/', // Default route when the app starts
+      routes: {
+        '/': (context) => SplashScreen(), // Splash or initial screen
+        '/auth': (context) => const AuthPage(), // Authentication page
+        '/group_chat': (context) => ChatListPage(), // Group chat page
+        '/Announcements':  (context) => AnnouncementManagement(),
+        '/incident_reports': (context) =>IncidentReportManagementPage(),
+        '/logbook': (context) =>LogBookManagementPage(),
+        '/sms': (context) => SmsManagementPage(),
+        '/map': (context) => MapPageMain(),
+        '/responder_account': (context) =>ResponderAccountManagementPage(),
+        '/citizen_accounts': (context) =>UserAccountManagementPage(),
+        // Add other routes here as needed
+      },
     );
   }
 }

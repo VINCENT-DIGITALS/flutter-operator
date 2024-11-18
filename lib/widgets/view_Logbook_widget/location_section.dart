@@ -21,7 +21,7 @@ class LogBookLocationSection extends StatefulWidget {
 
 class _LogBookLocationSectionState extends State<LogBookLocationSection> {
   // StreamSubscription<Position>? _positionStream; // For location updates
-  LatLng? _currentLocation; // Store current location
+  // LatLng? _currentLocation; // Store current location
   final PopupController _popupController = PopupController(); // Manage popups
   List<LatLng> points = [];
   final MapController mapController = MapController();
@@ -29,31 +29,31 @@ class _LogBookLocationSectionState extends State<LogBookLocationSection> {
   @override
   void initState() {
     super.initState();
-    _getCurrentLocation(); // Fetch the user's current location on load
+    // _getCurrentLocation(); // Fetch the user's current location on load
   }
 
-  // Fetches the current location using Geolocator
-  Future<void> _getCurrentLocation() async {
-    // Check permissions
-    LocationPermission permission = await Geolocator.checkPermission();
-    if (permission == LocationPermission.denied ||
-        permission == LocationPermission.deniedForever) {
-      permission = await Geolocator.requestPermission();
-    }
+  // // Fetches the current location using Geolocator
+  // Future<void> _getCurrentLocation() async {
+  //   // Check permissions
+  //   LocationPermission permission = await Geolocator.checkPermission();
+  //   if (permission == LocationPermission.denied ||
+  //       permission == LocationPermission.deniedForever) {
+  //     permission = await Geolocator.requestPermission();
+  //   }
 
-    if (permission == LocationPermission.always ||
-        permission == LocationPermission.whileInUse) {
-      Position position = await Geolocator.getCurrentPosition(
-          desiredAccuracy: LocationAccuracy.high);
+  //   if (permission == LocationPermission.always ||
+  //       permission == LocationPermission.whileInUse) {
+  //     Position position = await Geolocator.getCurrentPosition(
+  //         desiredAccuracy: LocationAccuracy.high);
 
-      setState(() {
-        _currentLocation = LatLng(position.latitude, position.longitude);
-      });
-    } else {
-      // Handle case when permission is denied
-      print("Location permissions are denied.");
-    }
-  }
+  //     setState(() {
+  //       _currentLocation = LatLng(position.latitude, position.longitude);
+  //     });
+  //   } else {
+  //     // Handle case when permission is denied
+  //     print("Location permissions are denied.");
+  //   }
+  // }
 
 // Method to retrieve markers including current and evacuation location
   List<Marker> getMarkers() {
@@ -73,19 +73,19 @@ class _LogBookLocationSectionState extends State<LogBookLocationSection> {
       ),
     ];
 
-    if (_currentLocation != null) {
-      markers.add(
-        Marker(
-          point: _currentLocation!,
-          child: const Icon(
-            Icons.person_pin_circle,
-            color: Colors.blue,
-            size: 40,
-          ),
-          key: const Key('currentLocationMarker'),
-        ),
-      );
-    }
+    // if (_currentLocation != null) {
+    //   markers.add(
+    //     Marker(
+    //       point: _currentLocation!,
+    //       child: const Icon(
+    //         Icons.person_pin_circle,
+    //         color: Colors.blue,
+    //         size: 40,
+    //       ),
+    //       key: const Key('currentLocationMarker'),
+    //     ),
+    //   );
+    // }
     return markers;
   }
 
@@ -168,14 +168,15 @@ class _LogBookLocationSectionState extends State<LogBookLocationSection> {
                                 child: SelectableText(
                                     'Address: ${widget.data['address']}'),
                               );
-                            } else if (marker.key ==
-                                const Key('currentLocationMarker')) {
-                              return Container(
-                                color: Colors.white,
-                                padding: const EdgeInsets.all(8.0),
-                                child: const Text('You are here'),
-                              );
                             }
+                            //  else if (marker.key ==
+                            //     const Key('currentLocationMarker')) {
+                            //   return Container(
+                            //     color: Colors.white,
+                            //     padding: const EdgeInsets.all(8.0),
+                            //     child: const Text('You are here'),
+                            //   );
+                            // }
                             return Container();
                           },
                         ),
@@ -185,18 +186,18 @@ class _LogBookLocationSectionState extends State<LogBookLocationSection> {
                 ),
               ),
               // Positioned widget for overlay button
-              Positioned(
-                top: 10,
-                right: 50,
-                child: IconButton(
-                  icon: Icon(Icons.my_location, color: Colors.blue),
-                  onPressed: () {
-                    if (_currentLocation != null) {
-                      mapController.move(_currentLocation!, 15.0);
-                    }
-                  },
-                ),
-              ),
+              // Positioned(
+              //   top: 10,
+              //   right: 50,
+              //   child: IconButton(
+              //     icon: Icon(Icons.my_location, color: Colors.blue),
+              //     onPressed: () {
+              //       if (_currentLocation != null) {
+              //         mapController.move(_currentLocation!, 15.0);
+              //       }
+              //     },
+              //   ),
+              // ),
               // Icon button to center map on report location
               Positioned(
                 top: 10,

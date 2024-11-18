@@ -144,10 +144,15 @@ Widget buildLineChart(BuildContext context) {
                   if (!snapshot.hasData) {
                     return const Center(child: CircularProgressIndicator());
                   }
+                  // Filter out archived logBook entries
+                  final nonArchivedDocs = snapshot.data!.docs.where((doc) {
+                    final data = doc.data() as Map<String, dynamic>;
+                    return data['archived'] == null ||
+                        data['archived'] == false;
+                  });
 
-                  // Group data by date and count occurrences
                   Map<String, int> dateCounts = {};
-                  for (var doc in snapshot.data!.docs) {
+                  for (var doc in nonArchivedDocs) {
                     Timestamp timestamp = doc['timestamp'];
                     DateTime date = timestamp.toDate();
                     if ((startDate == null || date.isAfter(startDate)) &&
@@ -201,7 +206,6 @@ Widget buildLineChart(BuildContext context) {
                         ),
                       ),
                     );
-                  
                   }
 
                   List<FlSpot> spots = [];

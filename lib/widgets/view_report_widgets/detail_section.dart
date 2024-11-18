@@ -35,7 +35,7 @@ class DetailSection extends StatelessWidget {
         children: [
           Text("Details", style: TextStyle(fontWeight: FontWeight.bold)),
           SizedBox(height: 8),
-          DetailItem(label: "Reporter Name", value: data["citizenName"]),
+          DetailItem(label: "Reporter email", value: data["email"]),
           DetailItem(label: "Date & Time", value: _formatTimestamp(data["timestamp"])),
           DetailItem(label: "Incident Type", value: data["incidentType"]),
           DetailItem(label: "Injured", value: data["injuredCount"]?.toString()),

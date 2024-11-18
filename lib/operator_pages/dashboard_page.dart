@@ -10,6 +10,7 @@ import '../widgets/pie_chart.dart';
 import '../widgets/recent_reports.dart';
 import '../widgets/recent_users.dart';
 import '../widgets/stats_card.dart';
+import 'mapPage/weatherService.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({Key? key}) : super(key: key);
@@ -20,56 +21,25 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
-  late Timer _timer;
-  int _secondsLeft = 7200; // 2 hours in seconds
-  String _timeLeft = '';
+  late final WeatherService _weatherService;
+  bool _isDialogOpen = false;
+  final ValueNotifier<bool> _isExpanded =
+      ValueNotifier<bool>(false); // State for text expansion
 
   @override
   void initState() {
     super.initState();
-    _startCountdown();
+    _weatherService = WeatherService(); // Get singleton instance
+    _weatherService
+        .startFetchingWeather(); // Start (or resume) the weather service countdown
+    // Set up callbacks
   }
 
   @override
   void dispose() {
-    _timer.cancel();
+    // Clear the callbacks to prevent memory leaks
+
     super.dispose();
-  }
-
-  void _startCountdown() {
-    // Update the countdown every second
-    _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
-      if (_secondsLeft > 0) {
-        setState(() {
-          _secondsLeft--;
-          _timeLeft = _formatDuration(_secondsLeft);
-        });
-      } else {
-        setState(() {
-          _timeLeft = 'Fetching weather data now...';
-        });
-        _secondsLeft = 7200; // Reset to 2 hours after fetch
-        _fetchWeatherData();
-      }
-    });
-  }
-
-  // Format seconds to HH:MM:SS
-  String _formatDuration(int seconds) {
-    int hours = (seconds / 3600).floor();
-    int minutes = ((seconds % 3600) / 60).floor();
-    int remainingSeconds = seconds % 60;
-    return '$hours:${minutes.toString().padLeft(2, '0')}:${remainingSeconds.toString().padLeft(2, '0')}';
-  }
-
-  // Simulate fetching and saving weather data
-  void _fetchWeatherData() async {
-    // Add your logic here for fetching weather data and saving it to the database
-    print("Fetching weather data and saving to database...");
-    // Once data is fetched and saved, reset the countdown timer
-    setState(() {
-      _timeLeft = 'Weather Data fetched and saved';
-    });
   }
 
   @override
@@ -101,17 +71,45 @@ class _HomePageState extends State<HomePage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Countdown Timer display
-                  Padding(
-                    padding: const EdgeInsets.all(8.0),
-                    child: Text(
-                      'Time left until next weather fetch: $_timeLeft',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.blue,
-                      ),
-                    ),
+                  ValueListenableBuilder<String>(
+                    valueListenable: _weatherService.countdownNotifier,
+                    builder: (context, timeLeft, child) {
+                      return Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          IconButton(
+                            icon: Icon(Icons.timer, color: Colors.blue),
+                            onPressed: () {}, // Add functionality if needed
+                          ),
+                          Expanded(
+                            child: ValueListenableBuilder<bool>(
+                              valueListenable: _isExpanded,
+                              builder: (context, isExpanded, child) {
+                                return GestureDetector(
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize
+                                        .max, // Keep row as compact as possible
+                                    children: [
+                                      Text(
+                                        'Time left until next weather data fetch: $timeLeft',
+                                        style: TextStyle(
+                                          fontSize: 18,
+                                          fontWeight: FontWeight.bold,
+                                          color: Colors.blue,
+                                        ),
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                      const SizedBox(
+                                          width: 4), // Add minimal spacing
+                                    ],
+                                  ),
+                                );
+                              },
+                            ),
+                          ),
+                        ],
+                      );
+                    },
                   ),
                   Expanded(
                     child: SingleChildScrollView(
@@ -210,8 +208,14 @@ class _HomePageState extends State<HomePage> {
                       if (!snapshot.hasData) {
                         return const Center(child: CircularProgressIndicator());
                       }
+                      // Filter out archived logBook entries
+                      final nonArchivedDocs = snapshot.data!.docs.where((doc) {
+                        final data = doc.data() as Map<String, dynamic>;
+                        return data['archived'] == null ||
+                            data['archived'] == false;
+                      });
                       Map<String, int> incidentTypeCounts = {};
-                      for (var doc in snapshot.data!.docs) {
+                      for (var doc in nonArchivedDocs) {
                         String incidentType = doc['incidentType'] ?? 'Unknown';
                         incidentTypeCounts[incidentType] =
                             (incidentTypeCounts[incidentType] ?? 0) + 1;
@@ -240,8 +244,15 @@ class _HomePageState extends State<HomePage> {
                     if (!snapshot.hasData) {
                       return const Center(child: CircularProgressIndicator());
                     }
+                    // Filter out archived logBook entries
+                    final nonArchivedDocs = snapshot.data!.docs.where((doc) {
+                      final data = doc.data() as Map<String, dynamic>;
+                      return data['archived'] == null ||
+                          data['archived'] == false;
+                    });
+
                     Map<String, int> incidentTypeCounts = {};
-                    for (var doc in snapshot.data!.docs) {
+                    for (var doc in nonArchivedDocs) {
                       String incidentType = doc['incidentType'] ?? 'Unknown';
                       incidentTypeCounts[incidentType] =
                           (incidentTypeCounts[incidentType] ?? 0) + 1;

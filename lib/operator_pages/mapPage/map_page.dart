@@ -10,6 +10,7 @@ import '../../widgets/location_service.dart';
 import 'package:flutter_map_cancellable_tile_provider/flutter_map_cancellable_tile_provider.dart';
 
 import 'weatherDialog.dart';
+import 'weatherService.dart';
 
 class MapPageMain extends StatefulWidget {
   const MapPageMain({super.key});
@@ -22,7 +23,7 @@ class _MapPageMainState extends State<MapPageMain> {
   final MapController mapController = MapController();
   final PopupController _popupController = PopupController();
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
-
+  final WeatherService _weatherService = WeatherService(); // Singleton instance
   StreamSubscription<Position>? _positionStream;
 
   bool isLoading = true;
@@ -57,6 +58,8 @@ class _MapPageMainState extends State<MapPageMain> {
   @override
   void initState() {
     super.initState();
+    _weatherService
+        .resetTimer(); // Fetch weather data and reset timer on page visit
     _initializeMap();
   }
 
@@ -114,7 +117,7 @@ class _MapPageMainState extends State<MapPageMain> {
                 ..._selectedLayers.entries
                     .where((entry) =>
                         entry.value &&
-                        mapController.zoom >
+                        mapController.camera.zoom >
                             5) // Limit zoom level for weather layers
                     .map((entry) => TileLayer(
                           urlTemplate:
@@ -142,6 +145,7 @@ class _MapPageMainState extends State<MapPageMain> {
             bottom: 80,
             right: 20,
             child: FloatingActionButton(
+              heroTag: 'mapSelectionButton', // Unique heroTag for this button
               onPressed: () {
                 _showBaseMapSelectionModal(context);
               },
@@ -152,6 +156,7 @@ class _MapPageMainState extends State<MapPageMain> {
             bottom: 20,
             right: 20,
             child: FloatingActionButton(
+              heroTag: 'layerSelectionButton', // Unique heroTag for this button
               onPressed: () {
                 _showLayerSelectionModal(context);
               },

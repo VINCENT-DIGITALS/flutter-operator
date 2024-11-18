@@ -75,13 +75,16 @@ class UserDataTableSource extends DataTableSource {
             style: TextStyle(fontSize: 14, color: Colors.black87),
           ));
         } else {
-          return DataCell(
+            return DataCell(
             Padding(
               padding: const EdgeInsets.symmetric(vertical: 8.0),
-              child: Text(
-                _truncateString(user[key.toLowerCase()]?.toString() ?? ''),
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(fontSize: 14, color: Colors.black87),
+              child: Tooltip(
+                message: user[key]?.toString() ?? 'N/A',
+                child: Text(
+                  _truncateString(user[key]?.toString() ?? 'N/A'),
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(fontSize: 14, color: Colors.black87),
+                ),
               ),
             ),
           );

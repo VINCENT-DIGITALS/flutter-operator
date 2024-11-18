@@ -46,6 +46,19 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
         //   onPressed: () {},
         // ),
 // Wrap the IconButton with a Material widget and set color to transparent
+        if (onSettingsPress !=
+            null) // Show settings button if callback is provided
+          Row(
+            children: [
+              IconButton(
+                icon: Icon(Icons.arrow_back, color: Colors.white),
+                onPressed: () {
+                  Navigator.of(context)
+                      .pop(); // Navigate back to the previous screen
+                },
+              ),
+            ],
+          ),
         Material(
           color: Colors.transparent, // Makes the background transparent
           child: IconButton(
@@ -73,10 +86,14 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
 
         if (onSettingsPress !=
             null) // Show settings button if callback is provided
-          IconButton(
-            icon: Icon(Icons.settings, color: Colors.white),
-            onPressed: onSettingsPress,
-          ),
+          Row(
+            children: [
+              IconButton(
+                icon: Icon(Icons.settings, color: Colors.white),
+                onPressed: onSettingsPress,
+              ),
+            ],
+          )
       ],
     );
   }

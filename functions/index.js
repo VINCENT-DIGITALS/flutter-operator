@@ -16,10 +16,94 @@ const admin = require("firebase-admin");
 // eslint-disable-next-line no-undef
 const serviceAccount = require("./firebase-admin.json");
 
+
+
+// eslint-disable-next-line no-undef
+
 // Initialize Firebase Admin SDK
 admin.initializeApp({
     credential: admin.credential.cert(serviceAccount),
 });
+
+// eslint-disable-next-line no-undef
+const axios = require("axios");
+
+// eslint-disable-next-line no-undef
+exports.sendSMS = functions.https.onCall(async (data) => {
+    const { deviceIden, phoneNumber, message } = data;
+
+    // Validate input
+    if (!deviceIden || !phoneNumber || !message) {
+        throw new functions.https.HttpsError(
+            "invalid-argument",
+            "Missing required parameters: deviceIden, phoneNumber, or message."
+        );
+    }
+
+
+    const urlString = "https://api.pushbullet.com/v2/texts";
+
+    // Convert the string into a URL object
+    const url = new URL(urlString);
+    // Pushbullet Access Token (store securely in environment config)
+    const pushbulletAccessToken = functions.config().pushbullet.token;
+
+    // Prepare API Request Headers
+    const headers = {
+        "Content-Type": "application/json",
+        "Access-Token": pushbulletAccessToken,
+    };
+
+    // Prepare API Request Body
+    const body = {
+        data: {
+            target_device_iden: deviceIden,
+            addresses: [phoneNumber],
+            message: message,
+        },
+    };
+    // Firestore reference
+    const logRef = admin.firestore().collection("sms").doc();
+    try {
+        // Make the API Request
+        const response = await axios.post(url, body, { headers });
+
+        // Handle success response
+        if (response.status === 200) {
+            await logRef.set({
+                message,
+                timestamp: admin.firestore.FieldValue.serverTimestamp(),
+                status: "Success", // Directly log status as Success
+            });
+
+            return {
+                success: true,
+                result: response.data,
+            };
+        } else {
+            throw new Error(
+                `Unexpected status code ${response.status}: ${response.data}`
+            );
+        }
+    } catch (error) {
+        // Log failed status in Firestore
+        await logRef.set({
+            message,
+            timestamp: admin.firestore.FieldValue.serverTimestamp(),
+            status: "Failed", // Directly log status as Failed
+            error: error.response?.data || error.message,
+        });
+
+        console.error("Error sending SMS:", error.message);
+        throw new functions.https.HttpsError(
+            "internal",
+            "Failed to send SMS via Pushbullet.",
+            error.response?.data || error.message
+        );
+    }
+});
+
+
 
 // eslint-disable-next-line no-undef
 exports.sendAnnouncementNotification = functions.firestore

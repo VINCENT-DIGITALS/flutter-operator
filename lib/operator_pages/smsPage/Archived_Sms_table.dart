@@ -1,16 +1,19 @@
+import 'package:administrator/widgets/view_logbook.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:intl/intl.dart';
-import '../../services/database_service.dart';
 
-class SmsDataTableSource extends DataTableSource {
+import '../../services/database_service.dart';
+import '../../widgets/view_sms.dart';
+
+class ArchivedSmsDataTableSource extends DataTableSource {
   final List<Map<String, dynamic>> data;
   final List<String> columnKeys;
   final BuildContext context;
   final DatabaseService _dbService = DatabaseService();
 
-  SmsDataTableSource(this.data, this.columnKeys, this.context);
+  ArchivedSmsDataTableSource(this.data, this.columnKeys, this.context);
 
   String _truncateString(String value) {
     return value.length > 25 ? '${value.substring(0, 10)}...' : value;
@@ -40,50 +43,94 @@ class SmsDataTableSource extends DataTableSource {
             mainAxisAlignment: MainAxisAlignment.start,
             children: [
               Tooltip(
-                message: 'View Report',
+                message: 'View SMS',
                 child: IconButton(
                   icon: Icon(
                     Icons.visibility,
                     color: Colors.blueAccent,
                   ),
                   onPressed: () {
-                    // showDialog(
-                    //   context: context,
-                    //   barrierDismissible: true,
-                    //   builder: (BuildContext context) {
-                    //     return ViewReportDialog(reportId: user['id']);
-                    //   },
-                    // );
+                    showDialog(
+                      context: context,
+                      barrierDismissible: true,
+                      builder: (BuildContext context) {
+                        return ViewSMSDialog(SMSID: user['id']);
+                      },
+                    );
                   },
                 ),
               ),
               Tooltip(
-                message: 'Delete Report',
+                message: 'UnArchive SMS',
                 child: IconButton(
                   icon: Icon(
                     Icons.delete_forever,
                     color: Colors.redAccent,
                   ),
                   onPressed: () {
-                    _showDeleteReportDialog(context, user['id']);
+                    _showArchiveLogBookDialog(context, user['id']);
                   },
                 ),
               ),
             ],
           ));
         } else if (key == "timestamp") {
+          // Use _formatTimestamp for createdAt field
           return DataCell(Text(
             _formatTimestamp(user[key] as Timestamp?),
             style: TextStyle(fontSize: 14, color: Colors.black87),
           ));
+        } else if (key == "timestamp") {
+          // Use _formatTimestamp for createdAt field
+          return DataCell(Text(
+            _formatTimestamp(user[key] as Timestamp?),
+            style: TextStyle(fontSize: 14, color: Colors.black87),
+          ));
+        } else if (key == "status") {
+          // Style the cell using Chips based on the seriousness value
+          final seriousness = user[key]?.toString() ?? 'N/A';
+          Color seriousnessColor;
+
+          switch (seriousness.toLowerCase()) {
+            case 'success':
+              seriousnessColor = Colors.greenAccent;
+              break;
+            case 'failed':
+              seriousnessColor = Colors.redAccent;
+              break;
+            default:
+              seriousnessColor =
+                  Colors.grey; // Default color for unknown values
+          }
+
+          return DataCell(
+            Container(
+              padding: const EdgeInsets.symmetric(vertical: 6.0),
+              child: Chip(
+                label: Text(
+                  seriousness,
+                  style: TextStyle(
+                      color: const Color.fromARGB(255, 0, 0, 0),
+                      fontWeight: FontWeight.bold),
+                ),
+                backgroundColor: seriousnessColor,
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12.0, vertical: 6.0),
+              ),
+            ),
+          );
         } else {
+          // Display other fields with truncation and default to 'N/A' if null
           return DataCell(
             Padding(
               padding: const EdgeInsets.symmetric(vertical: 8.0),
-              child: Text(
-                _truncateString(user[key]?.toString() ?? 'N/A'),
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(fontSize: 14, color: Colors.black87),
+              child: Tooltip(
+                message: user[key]?.toString() ?? 'N/A',
+                child: Text(
+                  _truncateString(user[key]?.toString() ?? 'N/A'),
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(fontSize: 14, color: Colors.black87),
+                ),
               ),
             ),
           );
@@ -92,14 +139,14 @@ class SmsDataTableSource extends DataTableSource {
     );
   }
 
-  void _showDeleteReportDialog(BuildContext context, String userId) {
+  void _showArchiveLogBookDialog(BuildContext context, String userId) {
     showDialog(
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: Text('Delete Report'),
+          title: Text('UnArchive SMS'),
           content: Text(
-              'Are you sure you want to delete this report? This action is unrecoverable.'),
+              'Are you sure you want to UnArchive this record? You can Archived it later if needed.'),
           actions: [
             TextButton(
               child: Text('Cancel'),
@@ -108,15 +155,15 @@ class SmsDataTableSource extends DataTableSource {
               },
             ),
             ElevatedButton(
-              child: Text('Delete'),
+              child: Text('UnArchive'),
               style: ElevatedButton.styleFrom(
                   foregroundColor: Colors.white,
-                  backgroundColor: Colors.redAccent),
+                  backgroundColor: Colors.orangeAccent),
               onPressed: () async {
                 try {
-                  await _dbService.deleteReport(userId);
+                  await _dbService.unArchiveSMS(userId);
                   Fluttertoast.showToast(
-                    msg: "Report deleted successfully",
+                    msg: "SMS record Unarchived successfully",
                     toastLength: Toast.LENGTH_SHORT,
                     gravity: ToastGravity.BOTTOM,
                     backgroundColor: Colors.green,
@@ -125,7 +172,7 @@ class SmsDataTableSource extends DataTableSource {
                   );
                 } catch (e) {
                   Fluttertoast.showToast(
-                    msg: "Failed to delete the report",
+                    msg: "Failed to archive the Logbook",
                     toastLength: Toast.LENGTH_SHORT,
                     gravity: ToastGravity.BOTTOM,
                     backgroundColor: Colors.red,
