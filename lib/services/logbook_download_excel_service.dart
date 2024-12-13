@@ -39,7 +39,6 @@ class ExcelExporter {
       // Define headers in the specified order
       final List<String> headers = [
         "timestamp",
-        "updatedAt",
         "incident",
         "incidentDesc",
         "incidentType",
@@ -47,13 +46,10 @@ class ExcelExporter {
         "seriousness",
         "landmark",
         "address",
-        "location",
         "status",
         "scam",
         "transportedTo",
         "primaryResponderDisplayName",
-        "primaryResponderId",
-        "reportId",
         "reporterName",
         "responders",
         "victims",
@@ -178,7 +174,6 @@ class ExcelExporter {
       // Define headers in the specified order
       final List<String> headers = [
         "timestamp",
-        "updatedAt",
         "incident",
         "incidentDesc",
         "incidentType",
@@ -186,13 +181,10 @@ class ExcelExporter {
         "seriousness",
         "landmark",
         "address",
-        "location",
         "status",
         "scam",
         "transportedTo",
         "primaryResponderDisplayName",
-        "primaryResponderId",
-        "reportId",
         "reporterName",
         "responders",
         "victims",

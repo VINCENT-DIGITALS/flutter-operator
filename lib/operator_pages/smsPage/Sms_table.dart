@@ -93,7 +93,7 @@ class SmsDataTableSource extends DataTableSource {
 
           switch (seriousness.toLowerCase()) {
             case 'success':
-              seriousnessColor = Colors.greenAccent;
+              seriousnessColor = Color.fromARGB(255, 42, 204, 10);
               break;
             case 'failed':
               seriousnessColor = Colors.redAccent;
@@ -104,18 +104,12 @@ class SmsDataTableSource extends DataTableSource {
           }
 
           return DataCell(
-            Container(
-              padding: const EdgeInsets.symmetric(vertical: 6.0),
-              child: Chip(
-                label: Text(
-                  seriousness,
-                  style: TextStyle(
-                      color: const Color.fromARGB(255, 0, 0, 0),
-                      fontWeight: FontWeight.bold),
-                ),
-                backgroundColor: seriousnessColor,
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 12.0, vertical: 6.0),
+            Text(
+              seriousness,
+              style: TextStyle(
+                color: seriousnessColor,
+                fontWeight: FontWeight.bold,
+                fontSize: 14,
               ),
             ),
           );

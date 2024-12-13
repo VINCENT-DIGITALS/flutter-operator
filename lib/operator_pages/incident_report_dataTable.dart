@@ -79,7 +79,7 @@ class IncidentReportDataTableSource extends DataTableSource {
             style: TextStyle(fontSize: 14, color: Colors.black87),
           ));
         } else if (key == "seriousness") {
-          // Style the cell using Chips based on the seriousness value
+          // Style the cell by highlighting the text based on the seriousness value
           final seriousness = user[key]?.toString() ?? 'N/A';
           Color seriousnessColor;
 
@@ -91,31 +91,25 @@ class IncidentReportDataTableSource extends DataTableSource {
               seriousnessColor = Colors.orangeAccent;
               break;
             case 'minor':
-              seriousnessColor = Colors.yellowAccent;
+              seriousnessColor = Color.fromARGB(255, 155, 155, 7);
               break;
             default:
               seriousnessColor =
-                  Colors.grey; // Default color for unknown values
+                  Colors.black87; // Default color for unknown values
           }
 
           return DataCell(
-            Container(
-              padding: const EdgeInsets.symmetric(vertical: 6.0),
-              child: Chip(
-                label: Text(
-                  seriousness,
-                  style: TextStyle(
-                      color: const Color.fromARGB(255, 0, 0, 0),
-                      fontWeight: FontWeight.bold),
-                ),
-                backgroundColor: seriousnessColor,
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 12.0, vertical: 6.0),
+            Text(
+              seriousness,
+              style: TextStyle(
+                color: seriousnessColor,
+                fontWeight: FontWeight.bold,
+                fontSize: 14,
               ),
             ),
           );
-        }else {
-            return DataCell(
+        } else {
+          return DataCell(
             Padding(
               padding: const EdgeInsets.symmetric(vertical: 8.0),
               child: Tooltip(
@@ -133,56 +127,56 @@ class IncidentReportDataTableSource extends DataTableSource {
     );
   }
 
-void _showArchiveLogBookDialog(BuildContext context, String userId) {
-  showDialog(
-    context: context,
-    builder: (BuildContext context) {
-      return AlertDialog(
-        title: Text('Archive Report'),
-        content: Text(
-            'Are you sure you want to archive this Report? You can restore it later if needed.'),
-        actions: [
-          TextButton(
-            child: Text('Cancel'),
-            onPressed: () {
-              Navigator.of(context).pop();
-            },
-          ),
-          ElevatedButton(
-            child: Text('Archive'),
-            style: ElevatedButton.styleFrom(
-                foregroundColor: Colors.white,
-                backgroundColor: Colors.orangeAccent),
-            onPressed: () async {
-              try {
-                await _dbService.archiveReport(userId);
-                Fluttertoast.showToast(
-                  msg: "Report archived successfully",
-                  toastLength: Toast.LENGTH_SHORT,
-                  gravity: ToastGravity.BOTTOM,
-                  backgroundColor: Colors.green,
-                  textColor: Colors.white,
-                  fontSize: 16.0,
-                );
-              } catch (e) {
-                Fluttertoast.showToast(
-                  msg: "Failed to archive the Report",
-                  toastLength: Toast.LENGTH_SHORT,
-                  gravity: ToastGravity.BOTTOM,
-                  backgroundColor: Colors.red,
-                  textColor: Colors.white,
-                  fontSize: 16.0,
-                );
-              } finally {
+  void _showArchiveLogBookDialog(BuildContext context, String userId) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text('Archive Report'),
+          content: Text(
+              'Are you sure you want to archive this Report? You can restore it later if needed.'),
+          actions: [
+            TextButton(
+              child: Text('Cancel'),
+              onPressed: () {
                 Navigator.of(context).pop();
-              }
-            },
-          )
-        ],
-      );
-    },
-  );
-}
+              },
+            ),
+            ElevatedButton(
+              child: Text('Archive'),
+              style: ElevatedButton.styleFrom(
+                  foregroundColor: Colors.white,
+                  backgroundColor: Colors.orangeAccent),
+              onPressed: () async {
+                try {
+                  await _dbService.archiveReport(userId);
+                  Fluttertoast.showToast(
+                    msg: "Report archived successfully",
+                    toastLength: Toast.LENGTH_SHORT,
+                    gravity: ToastGravity.BOTTOM,
+                    backgroundColor: Colors.green,
+                    textColor: Colors.white,
+                    fontSize: 16.0,
+                  );
+                } catch (e) {
+                  Fluttertoast.showToast(
+                    msg: "Failed to archive the Report",
+                    toastLength: Toast.LENGTH_SHORT,
+                    gravity: ToastGravity.BOTTOM,
+                    backgroundColor: Colors.red,
+                    textColor: Colors.white,
+                    fontSize: 16.0,
+                  );
+                } finally {
+                  Navigator.of(context).pop();
+                }
+              },
+            )
+          ],
+        );
+      },
+    );
+  }
 
   @override
   bool get isRowCountApproximate => false;

@@ -18,12 +18,16 @@ class SMSUnArchivingHelper {
     final batch = _firestore.batch();
     final QuerySnapshot snapshot = await _firestore
         .collection('sms')
-        .where('timestamp', isGreaterThanOrEqualTo: Timestamp.fromDate(startDate))
-        .where('timestamp', isLessThanOrEqualTo: Timestamp.fromDate(endDate.add(const Duration(days: 1))))
+        .where('timestamp',
+            isGreaterThanOrEqualTo: Timestamp.fromDate(startDate))
+        .where('timestamp',
+            isLessThanOrEqualTo:
+                Timestamp.fromDate(endDate.add(const Duration(days: 1))))
         .get();
 
     if (snapshot.docs.isEmpty) {
-      Fluttertoast.showToast(msg: 'No records found to archive in the selected range.');
+      Fluttertoast.showToast(
+          msg: 'No records found to archive in the selected range.');
       Navigator.of(mainContext).pop();
       return;
     }
@@ -51,7 +55,7 @@ class SMSUnArchivingHelper {
 
   static Future<void> _unArchiveAllDocuments(BuildContext mainContext) async {
     final batch = _firestore.batch();
-    final QuerySnapshot snapshot = await _firestore.collection('SMS').get();
+    final QuerySnapshot snapshot = await _firestore.collection('sms').get();
 
     if (snapshot.docs.isEmpty) {
       Fluttertoast.showToast(msg: 'No records found to Unarchive.');
@@ -103,7 +107,8 @@ class SMSUnArchivingHelper {
               Navigator.of(context).pop();
               _showDateRangeDialog(mainContext);
             },
-            child: Text('Select Date Range', style: TextStyle(color: Colors.blue)),
+            child:
+                Text('Select Date Range', style: TextStyle(color: Colors.blue)),
           ),
         ],
       ),
@@ -151,8 +156,9 @@ class SMSUnArchivingHelper {
                   onTap: () async {
                     final pickedDate = await showDatePicker(
                       context: context,
-                      initialDate: DateTime.now(),
-                      firstDate: DateTime(2000),
+                      initialDate: endDate ?? (startDate ?? DateTime.now()),
+                      firstDate: startDate ??
+                          DateTime(2000), // Ensure startDate limits endDate
                       lastDate: DateTime.now(),
                     );
                     if (pickedDate != null) {
@@ -204,8 +210,8 @@ class SMSUnArchivingHelper {
     );
   }
 
-  static Future<void> confirmAndArchiveLogBook(
-      BuildContext mainContext, {bool archiveAll = false, DateTime? startDate, DateTime? endDate}) async {
+  static Future<void> confirmAndArchiveLogBook(BuildContext mainContext,
+      {bool archiveAll = false, DateTime? startDate, DateTime? endDate}) async {
     // Authentication and archiving logic similar to deletion implementation
     final TextEditingController passwordController = TextEditingController();
 
@@ -237,7 +243,8 @@ class SMSUnArchivingHelper {
 
                   if (user == null) {
                     Fluttertoast.showToast(
-                        msg: 'User is not logged in.', toastLength: Toast.LENGTH_LONG);
+                        msg: 'User is not logged in.',
+                        toastLength: Toast.LENGTH_LONG);
                     return;
                   }
 
@@ -253,14 +260,18 @@ class SMSUnArchivingHelper {
                   if (archiveAll) {
                     await _unArchiveAllDocuments(mainContext);
                   } else if (startDate != null && endDate != null) {
-                    await _unArchiveDocumentsInRange(mainContext, startDate, endDate);
+                    await _unArchiveDocumentsInRange(
+                        mainContext, startDate, endDate);
                   }
                 } catch (e) {
                   Fluttertoast.showToast(
-                      msg: 'Incorrect password or reauthentication failed.', toastLength: Toast.LENGTH_LONG);
+                      msg: 'Incorrect password or reauthentication failed.',
+                      toastLength: Toast.LENGTH_LONG);
                 }
               } else {
-                Fluttertoast.showToast(msg: 'Password cannot be empty.', toastLength: Toast.LENGTH_LONG);
+                Fluttertoast.showToast(
+                    msg: 'Password cannot be empty.',
+                    toastLength: Toast.LENGTH_LONG);
               }
             },
             child: Text('Confirm', style: TextStyle(color: Colors.blue)),

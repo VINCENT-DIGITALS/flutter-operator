@@ -152,6 +152,7 @@ class _SmsManagementPageState extends State<SmsManagementPage> {
                                                     IconButton(
                                                       icon: Icon(Icons.download,
                                                           color: Colors.blue),
+                                                          tooltip: 'Download SMS',
                                                       onPressed:
                                                           _showDownloadDialog,
                                                     ),
@@ -159,8 +160,9 @@ class _SmsManagementPageState extends State<SmsManagementPage> {
                                                       icon: Icon(
                                                           Icons.delete_forever,
                                                           color: Colors.red),
+                                                          tooltip: 'Archive SMS',
                                                       onPressed: () {
-                                                        SMSUnArchivingHelper
+                                                        SMSArchivingHelper
                                                             .initialConfirmation(
                                                           context,
                                                         );
@@ -247,6 +249,7 @@ class _SmsManagementPageState extends State<SmsManagementPage> {
                                                     IconButton(
                                                       icon: Icon(Icons.download,
                                                           color: Colors.blue),
+                                                          tooltip: 'Download SMS',
                                                       onPressed:
                                                           _showDownloadDialog,
                                                     ),
@@ -254,8 +257,10 @@ class _SmsManagementPageState extends State<SmsManagementPage> {
                                                       icon: Icon(
                                                           Icons.delete_forever,
                                                           color: Colors.red),
+                                                          tooltip:
+                                                          'Archive SMS',
                                                       onPressed: () {
-                                                        ArchivedSMSArchivingHelper
+                                                        SMSArchivingHelper
                                                             .initialConfirmation(
                                                           context,
                                                         );
@@ -376,39 +381,75 @@ class _UserAccountsTableState extends State<UserAccountsTable> {
     ];
   }
 
-  @override
-  Widget build(BuildContext context) {
-    List<Map<String, dynamic>> filteredData = widget.data.where((user) {
-      String query = widget.searchQuery.toLowerCase(); // Lowercase query
+@override
+Widget build(BuildContext context) {
+  List<Map<String, dynamic>> filteredData = widget.data.where((user) {
+    String query = widget.searchQuery.toLowerCase(); // Lowercase query
 
-      // Check if any value in the user map contains the search query
-      return user.values.any((value) {
-        return value.toString().toLowerCase().contains(query);
-      });
-    }).toList();
+    // Check if any value in the user map contains the search query
+    return user.values.any((value) {
+      return value.toString().toLowerCase().contains(query);
+    });
+  }).toList();
 
-    return DefaultTabController(
-      length: 1,
-      child: Column(
-        children: [
-          TabBar(
-            labelColor: Colors.deepPurple,
-            unselectedLabelColor: Colors.black54,
-            tabs: [
-              Tab(text: 'SMS Records'),
+  return DefaultTabController(
+    length: 1,
+    child: Column(
+      children: [
+        Container(
+          // color: Colors.grey[100], // Background for the entire TabBar section
+          padding: EdgeInsets.symmetric(vertical: 8),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center, // Center the tab
+            children: [
+              TabBar(
+                isScrollable: true, // Allow minimal width for the tab
+                labelColor: Colors.white, // Active tab text color
+                unselectedLabelColor: Colors.black54, // Inactive tab text color
+                indicatorSize: TabBarIndicatorSize.label, // Shrink the box to fit the label
+                indicator: BoxDecoration(
+                  color: Colors.deepPurple, // Background color for active tab
+                  borderRadius: BorderRadius.circular(12), // Rounded corners
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black26,
+                      blurRadius: 6,
+                      offset: Offset(0, 3), // Shadow effect for depth
+                    ),
+                  ],
+                ),
+                indicatorPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 6), // Minimal padding
+                labelStyle: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16, // Emphasize active tab text
+                ),
+                unselectedLabelStyle: TextStyle(
+                  fontWeight: FontWeight.normal,
+                  fontSize: 14,
+                ),
+                tabs: [
+                  Tab(
+                    child: Padding(
+                      padding: EdgeInsets.symmetric(horizontal: 12.0),
+                      child: Text('SMS Records'),
+                    ),
+                  ),
+                ],
+              ),
             ],
           ),
-          Expanded(
-            child: TabBarView(
-              children: [
-                _buildIncentLogBooksTable(filteredData),
-              ],
-            ),
+        ),
+        Expanded(
+          child: TabBarView(
+            children: [
+              _buildIncentLogBooksTable(filteredData),
+            ],
           ),
-        ],
-      ),
-    );
-  }
+        ),
+      ],
+    ),
+  );
+}
 
   Widget _buildIncentLogBooksTable(List<Map<String, dynamic>> filteredData) {
     // Filter and sort data based on conditions

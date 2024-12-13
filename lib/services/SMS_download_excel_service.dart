@@ -18,7 +18,7 @@ class SmsExcelExporter {
       // Filter out documents where `archived` is true (or missing as false)
       final filteredDocs = snapshot.docs.where((doc) {
         final data = doc.data();
-        return data['archived'] == false;
+        return data['archived'] == null || data['archived'] == false;
       }).toList();
 
       if (filteredDocs.isEmpty) {
@@ -42,6 +42,8 @@ class SmsExcelExporter {
         "timestamp",
         'message',
         'status',
+        'numFailed',
+        'NumSuccess',
       ];
       // Add headers to the first row
       for (int i = 0; i < headers.length; i++) {
@@ -139,7 +141,7 @@ class SmsExcelExporter {
       // Filter out documents where `archived` is true (or missing as false)
       final filteredDocs = snapshot.docs.where((doc) {
         final data = doc.data();
-        return data['archived'] == false;
+       return data['archived'] == null || data['archived'] == false;
       }).toList();
 
       if (filteredDocs.isEmpty) {
@@ -163,6 +165,8 @@ class SmsExcelExporter {
         "timestamp",
         'message',
         'status',
+        'numFailed',
+        'NumSuccess',
       ];
 
       // Add headers to the first row

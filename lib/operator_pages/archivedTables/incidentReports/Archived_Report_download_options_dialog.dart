@@ -1,18 +1,18 @@
-
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
 import 'Archived_report_download_excel_service.dart';
 
-
-
 class Archived_ReportDownloadDialog extends StatefulWidget {
   @override
-  _Archived_ReportDownloadDialogState createState() => _Archived_ReportDownloadDialogState();
+  _Archived_ReportDownloadDialogState createState() =>
+      _Archived_ReportDownloadDialogState();
 }
 
-class _Archived_ReportDownloadDialogState extends State<Archived_ReportDownloadDialog> {
-  final ArchivedReportExcelExporter excelExporter = ArchivedReportExcelExporter();
+class _Archived_ReportDownloadDialogState
+    extends State<Archived_ReportDownloadDialog> {
+  final ArchivedReportExcelExporter excelExporter =
+      ArchivedReportExcelExporter();
   bool isLoading = false;
   bool isDateRangeSelected = false;
   DateTime? startDate;
@@ -118,13 +118,17 @@ class _Archived_ReportDownloadDialogState extends State<Archived_ReportDownloadD
               onTap: () async {
                 final pickedDate = await showDatePicker(
                   context: context,
-                  initialDate: DateTime.now(),
+                  initialDate: startDate ?? DateTime.now(),
                   firstDate: DateTime(2000),
                   lastDate: DateTime.now(),
                 );
                 if (pickedDate != null) {
                   setState(() {
                     startDate = pickedDate;
+                    // Ensure endDate is valid after changing startDate
+                    if (endDate != null && endDate!.isBefore(startDate!)) {
+                      endDate = null; // Reset endDate if it's invalid
+                    }
                   });
                 }
               },
@@ -140,8 +144,9 @@ class _Archived_ReportDownloadDialogState extends State<Archived_ReportDownloadD
               onTap: () async {
                 final pickedDate = await showDatePicker(
                   context: context,
-                  initialDate: DateTime.now(),
-                  firstDate: DateTime(2000),
+                  initialDate: endDate ?? (startDate ?? DateTime.now()),
+                  firstDate: startDate ??
+                      DateTime(2000), // Ensure startDate limits endDate
                   lastDate: DateTime.now(),
                 );
                 if (pickedDate != null) {
@@ -156,7 +161,7 @@ class _Archived_ReportDownloadDialogState extends State<Archived_ReportDownloadD
                     : 'Select end date',
               ),
             ),
-          ],
+          ]
         ],
       ),
       actions: [

@@ -26,29 +26,16 @@ class _UserGroupSelectionDialogState extends State<UserGroupSelectionDialog> {
       print("Phone Numbers: $phoneNumbers");
       print("Message: $message");
       setState(() => isLoading = true); // Show loading indicator
-      // HttpsCallable callable =
-      //     FirebaseFunctions.instance.httpsCallable('sendSMS');
-      // final response = await callable.call({
-      //   'deviceIden': "ujDS8xjEV3YsjwBu3zvi3g", // Pushbullet device ID
-      //   'phoneNumber': phoneNumber, // Recipient phone number
-      //   'message': message, // SMS message
-      // });
-
-      // if (response.data['success'] == true) {
-      //   print("SMS sent successfully: ${response.data['result']}");
-      // } else {
-      //   throw Exception("Failed to send SMS: ${response.data}");
-      // }
 
       // Create an instance of PushbulletService
       final pushbulletService = PushbulletService(
         pushbulletAccessToken:
-            "o.I7LYRxnF5I8MBkWG3LwHGPjuvQYaQkAz", // Replace with your token
+            "o.LPC89Wi7X2uFrq2ICpScRp7i4YgtxGz5", // Replace with your token
       );
 
       // Call PushbulletService to send the SMS
       final result = await pushbulletService.sendSMSBulk(
-        deviceIden: "ujE2RfL8hMGsjzkRjLGcDc", // Pushbullet device ID
+        deviceIden: "ujDS8xjEV3YsjwBu3zvi3g", // Pushbullet device ID
         phoneNumbers: phoneNumbers,
         message: message,
       );
@@ -58,7 +45,7 @@ class _UserGroupSelectionDialogState extends State<UserGroupSelectionDialog> {
         print(
             "SMS sent successfully: ${result['isSuccess']} phone numbers.\nFailed: ${result['numFailed']} ");
       } else {
-        throw Exception("Failed to send SMS: ${result['error']}");
+        throw Exception("Failed to send SMS: Contact Developer or try again. ${result['error']}");
       }
     } catch (e) {
       // Check for the Pushbullet Pro error specifically

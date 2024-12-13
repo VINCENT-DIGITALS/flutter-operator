@@ -259,15 +259,53 @@ class _UserAccountsTableState extends State<UserAccountsTable> {
       length: 3, // Three tabs
       child: Column(
         children: [
-          TabBar(
-            labelColor: Colors.deepPurple,
-            unselectedLabelColor: Colors.black54,
+         Container(
+          // color: Colors.grey[100], // Background for the entire TabBar section
+          padding: EdgeInsets.symmetric(vertical: 8),
+          child: TabBar(
+            isScrollable: false, // Tabs will cover the entire row
+            labelColor: Colors.white, // Active tab text color
+            unselectedLabelColor: Colors.black54, // Inactive tab text color
+            indicator: BoxDecoration(
+              color: Colors.deepPurple, // Background color for active tab
+              borderRadius: BorderRadius.circular(12), // Rounded corners
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black26,
+                  blurRadius: 6,
+                  offset: Offset(0, 3), // Shadow effect for depth
+                ),
+              ],
+            ),
+            indicatorPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            labelStyle: TextStyle(
+              fontWeight: FontWeight.bold,
+              fontSize: 16, // Emphasize active tab text
+            ),
+            unselectedLabelStyle: TextStyle(
+              fontWeight: FontWeight.normal,
+              fontSize: 14,
+            ),
             tabs: [
-              Tab(text: 'Pending'),
-              Tab(text: 'In Progress'),
-              Tab(text: 'Completed'),
+              Tab(
+                child: Center(
+                  child: Text('Pending'),
+                ),
+              ),
+              Tab(
+                child: Center(
+                  child: Text('In Progress'),
+                ),
+              ),
+              Tab(
+                child: Center(
+                  child: Text('Completed'),
+                ),
+              ),
             ],
           ),
+        ),
+        
           Expanded(
             child: TabBarView(
               children: [

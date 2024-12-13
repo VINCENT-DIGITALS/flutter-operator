@@ -1,8 +1,5 @@
-import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-import 'package:fl_chart/fl_chart.dart';
-
 import '../widgets/appbar_navigation.dart';
 import '../widgets/custom_drawer.dart';
 import '../widgets/line_chart.dart';
@@ -95,7 +92,7 @@ class _HomePageState extends State<HomePage> {
                                           children: [
                                             Expanded(
                                               child: Text(
-                                                'Time left until next weather data fetch: $timeLeft',
+                                                'Time until next weather data fetch: $timeLeft',
                                                 style: TextStyle(
                                                   fontSize: 18,
                                                   fontWeight: FontWeight.bold,
@@ -114,7 +111,7 @@ class _HomePageState extends State<HomePage> {
                                               CrossAxisAlignment.start,
                                           children: [
                                             Text(
-                                              'Time left until next weather data fetch: $timeLeft',
+                                              'Time until next weather data fetch: $timeLeft',
                                               style: TextStyle(
                                                 fontSize: 16,
                                                 fontWeight: FontWeight.bold,

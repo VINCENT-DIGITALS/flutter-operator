@@ -39,18 +39,14 @@ class ArchivedReportExcelExporter {
       // Define headers in the specified order
       final List<String> headers = [
         "timestamp",
-        "updatedAt",
         "acceptedBy",
         "address",
-        "location",
+        "landmark",
         "incidentType",
         "seriousness",
         "status",
         "injuredCount",
         "incidentType",
-        "landmark",
-        "reporterId",
-        "responderId",
         "description",
         "mediaUrl",
       ];
@@ -173,18 +169,14 @@ class ArchivedReportExcelExporter {
       // Define headers in the specified order
       final List<String> headers = [
         "timestamp",
-        "updatedAt",
         "acceptedBy",
         "address",
-        "location",
+        "landmark",
         "incidentType",
         "seriousness",
         "status",
         "injuredCount",
         "incidentType",
-        "landmark",
-        "reporterId",
-        "responderId",
         "description",
         "mediaUrl",
       ];

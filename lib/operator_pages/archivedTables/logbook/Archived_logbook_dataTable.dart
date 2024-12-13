@@ -80,7 +80,7 @@ class Archived_LogBookDataTableSource extends DataTableSource {
             style: TextStyle(fontSize: 14, color: Colors.black87),
           ));
         } else if (key == "seriousness") {
-          // Style the cell using Chips based on the seriousness value
+          // Style the cell by highlighting the text based on the seriousness value
           final seriousness = user[key]?.toString() ?? 'N/A';
           Color seriousnessColor;
 
@@ -92,26 +92,20 @@ class Archived_LogBookDataTableSource extends DataTableSource {
               seriousnessColor = Colors.orangeAccent;
               break;
             case 'minor':
-              seriousnessColor = Colors.yellowAccent;
+              seriousnessColor = Color.fromARGB(255, 155, 155, 7);
               break;
             default:
               seriousnessColor =
-                  Colors.grey; // Default color for unknown values
+                  Colors.black87; // Default color for unknown values
           }
 
           return DataCell(
-            Container(
-              padding: const EdgeInsets.symmetric(vertical: 6.0),
-              child: Chip(
-                label: Text(
-                  seriousness,
-                  style: TextStyle(
-                      color: const Color.fromARGB(255, 0, 0, 0),
-                      fontWeight: FontWeight.bold),
-                ),
-                backgroundColor: seriousnessColor,
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 12.0, vertical: 6.0),
+            Text(
+              seriousness,
+              style: TextStyle(
+                color: seriousnessColor,
+                fontWeight: FontWeight.bold,
+                fontSize: 14,
               ),
             ),
           );

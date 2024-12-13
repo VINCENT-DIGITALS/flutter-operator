@@ -115,13 +115,17 @@ class _DownloadDialogState extends State<DownloadDialog> {
               onTap: () async {
                 final pickedDate = await showDatePicker(
                   context: context,
-                  initialDate: DateTime.now(),
+                  initialDate: startDate ?? DateTime.now(),
                   firstDate: DateTime(2000),
                   lastDate: DateTime.now(),
                 );
                 if (pickedDate != null) {
                   setState(() {
                     startDate = pickedDate;
+                    // Ensure endDate is valid after changing startDate
+                    if (endDate != null && endDate!.isBefore(startDate!)) {
+                      endDate = null; // Reset endDate if it's invalid
+                    }
                   });
                 }
               },
@@ -137,8 +141,9 @@ class _DownloadDialogState extends State<DownloadDialog> {
               onTap: () async {
                 final pickedDate = await showDatePicker(
                   context: context,
-                  initialDate: DateTime.now(),
-                  firstDate: DateTime(2000),
+                  initialDate: endDate ?? (startDate ?? DateTime.now()),
+                  firstDate: startDate ??
+                      DateTime(2000), // Ensure startDate limits endDate
                   lastDate: DateTime.now(),
                 );
                 if (pickedDate != null) {
@@ -153,7 +158,7 @@ class _DownloadDialogState extends State<DownloadDialog> {
                     : 'Select end date',
               ),
             ),
-          ],
+          ]
         ],
       ),
       actions: [

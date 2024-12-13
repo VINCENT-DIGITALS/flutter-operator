@@ -42,6 +42,8 @@ class ArchivedSmsExcelExporter {
         "timestamp",
         'message',
         'status',
+        'numFailed',
+        'NumSuccess',
       ];
       // Add headers to the first row
       for (int i = 0; i < headers.length; i++) {
@@ -163,6 +165,8 @@ class ArchivedSmsExcelExporter {
         "timestamp",
         'message',
         'status',
+        'numFailed',
+        'NumSuccess',
       ];
 
       // Add headers to the first row

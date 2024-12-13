@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:intl/intl.dart';
 
-class ArchivedSMSArchivingHelper {
+class SMSArchivingHelper {
   static final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   static final FirebaseAuth _auth = FirebaseAuth.instance;
 
@@ -36,7 +36,7 @@ class ArchivedSMSArchivingHelper {
     try {
       await batch.commit();
       Fluttertoast.showToast(
-        msg: 'SMS records in the selected range have been Unarchived.',
+        msg: 'SMS records in the selected range have been archived.',
         toastLength: Toast.LENGTH_LONG,
       );
     } catch (e) {
@@ -51,7 +51,7 @@ class ArchivedSMSArchivingHelper {
 
   static Future<void> _unArchiveAllDocuments(BuildContext mainContext) async {
     final batch = _firestore.batch();
-    final QuerySnapshot snapshot = await _firestore.collection('SMS').get();
+    final QuerySnapshot snapshot = await _firestore.collection('sms').get();
 
     if (snapshot.docs.isEmpty) {
       Fluttertoast.showToast(msg: 'No records found to Unarchive.');
@@ -67,7 +67,7 @@ class ArchivedSMSArchivingHelper {
     try {
       await batch.commit();
       Fluttertoast.showToast(
-        msg: 'All SMS records have been Unarchived.',
+        msg: 'All SMS records have been archived.',
         toastLength: Toast.LENGTH_LONG,
       );
     } catch (e) {
@@ -119,7 +119,7 @@ class ArchivedSMSArchivingHelper {
       builder: (context) => StatefulBuilder(
         builder: (context, setState) {
           return AlertDialog(
-            title: Text('Select Date Range for Unarchiving'),
+            title: Text('Select Date Range for archiving'),
             content: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -151,8 +151,9 @@ class ArchivedSMSArchivingHelper {
                   onTap: () async {
                     final pickedDate = await showDatePicker(
                       context: context,
-                      initialDate: DateTime.now(),
-                      firstDate: DateTime(2000),
+                      initialDate: endDate ?? (startDate ?? DateTime.now()),
+                      firstDate: startDate ??
+                          DateTime(2000), // Ensure startDate limits endDate
                       lastDate: DateTime.now(),
                     );
                     if (pickedDate != null) {
@@ -212,7 +213,7 @@ class ArchivedSMSArchivingHelper {
     showDialog(
       context: mainContext,
       builder: (context) => AlertDialog(
-        title: Text('Enter Password to Confirm Unarchiving'),
+        title: Text('Enter Password to Confirm archiving'),
         content: TextField(
           controller: passwordController,
           obscureText: true,
